@@ -29,14 +29,8 @@ export interface Annotation {
     visibility: AnnotationVisibility;
 }
 
-export interface User {
-    id: string;
-    name: string;
-    isAdmin: boolean;
-}
-
-// Sample users
-export const users: User[] = [
+// Sample users (explicit inline type; AuthUser from context will be the canonical type at runtime)
+export const users: { id: string; name: string; isAdmin: boolean }[] = [
     { id: 'u1', name: 'Alice', isAdmin: false },
     { id: 'u2', name: 'Bob', isAdmin: false },
     { id: 'admin', name: 'Admin', isAdmin: true },
