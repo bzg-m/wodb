@@ -1,4 +1,3 @@
-import { h } from 'preact';
 import { createContext } from 'preact';
 import { useState, useEffect, useContext } from 'preact/hooks';
 
