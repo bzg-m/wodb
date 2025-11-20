@@ -3,7 +3,6 @@ import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 import {
     getSetById,
-    getUserAnnotationForObject,
     saveAnnotation,
     requestReviewForUserInSet,
     getUserAnnotationsForSet,
@@ -50,7 +49,7 @@ export function SetPage(): preact.JSX.Element {
     }
 
     function openAnnotationForEdit(aId: string) {
-        const a = getUserAnnotationForObject(user.id, set.id, aId) || userAnnotations.find((x) => x.id === aId);
+        const a = userAnnotations.find((x) => x.id === aId);
         if (!a) return;
         setSelected(a.objectId);
         setEditingId(a.id);
@@ -98,27 +97,56 @@ export function SetPage(): preact.JSX.Element {
         setVersion((v) => v + 1);
     }
 
-    return (
-        <section>
-            <h2>{set.title}</h2>
-            <p>{set.description}</p>
+    function renderAnnotationPanel(): preact.JSX.Element {
+        if (isLocked) {
+            return <div class="text-red-600">Review requested — annotations locked.</div>;
+        }
 
+        return (
             <div>
+                <h3 class="text-lg font-medium mb-2">{editingId ? 'Edit Annotation' : selected ? `New annotation for ${selected}` : 'Select an object to annotate'}</h3>
+                {selected && (
+                    <div>
+                        <textarea
+                            class="w-full border rounded p-2 mb-2"
+                            value={text}
+                            onInput={(e: Event) => setText((e.target as HTMLTextAreaElement).value)}
+                        />
+                        <div class="flex gap-2">
+                            <button class="bg-blue-600 text-white px-3 py-1 rounded" onClick={handleSave} disabled={!text.trim()}>
+                                {editingId ? 'Save Changes' : 'Save Draft'}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    return (
+        <section class="p-4">
+            <h2 class="text-2xl font-semibold">{set.title}</h2>
+            <p class="text-sm text-gray-600 mb-4">{set.description}</p>
+
+            <div class="grid grid-cols-4 gap-2 mb-6">
                 {set.objects.map((o) => (
-                    <button onClick={() => openObjectForNew(o.id)}>
+                    <button
+                        class={`border rounded p-3 text-center hover:shadow ${selected === o.id ? 'ring-2 ring-blue-500' : ''}`}
+                        onClick={() => openObjectForNew(o.id)}
+                    >
                         {o.type === 'image' ? <img src={o.value} alt="object" /> : <span>{o.value}</span>}
                     </button>
                 ))}
             </div>
 
-            <h3>Your annotations for this set</h3>
-            <table>
+            <h3 class="text-xl mb-2">Your annotations for this set</h3>
+            <table class="min-w-full bg-white border mb-6">
                 <thead>
-                    <tr>
-                        <th>Object</th>
-                        <th>Annotation</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                    <tr class="bg-gray-100 text-left">
+                        <th class="p-2">Object</th>
+                        <th class="p-2">Annotation</th>
+                        <th class="p-2">Status</th>
+                        <th class="p-2">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,23 +155,27 @@ export function SetPage(): preact.JSX.Element {
                         if (anns.length === 0) {
                             return (
                                 <tr>
-                                    <td>{o.value}</td>
-                                    <td colSpan={3}>No annotations</td>
+                                    <td class="p-2">{o.value}</td>
+                                    <td class="p-2" colSpan={3}>
+                                        No annotations
+                                    </td>
                                 </tr>
                             );
                         }
                         return anns.map((a) => (
                             <tr>
-                                <td>{o.value}</td>
-                                <td>{a.text}</td>
-                                <td>{a.status}</td>
-                                <td>
-                                    <button disabled={isLocked} onClick={() => openAnnotationForEdit(a.id)}>
-                                        Edit
-                                    </button>
-                                    <button disabled={isLocked} onClick={() => handleDelete(a.id)}>
-                                        Remove
-                                    </button>
+                                <td class="p-2 align-top">{o.value}</td>
+                                <td class="p-2 align-top break-words">{a.text}</td>
+                                <td class="p-2 align-top">{a.status}</td>
+                                <td class="p-2 align-top">
+                                    <div class="flex gap-2">
+                                        <button class="px-2 py-1 bg-yellow-500 text-white rounded" disabled={isLocked} onClick={() => openAnnotationForEdit(a.id)}>
+                                            Edit
+                                        </button>
+                                        <button class="px-2 py-1 bg-red-500 text-white rounded" disabled={isLocked} onClick={() => handleDelete(a.id)}>
+                                            Remove
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ));
@@ -151,28 +183,14 @@ export function SetPage(): preact.JSX.Element {
                 </tbody>
             </table>
 
-            <div>
-                {isLocked ? (
-                    <div>Review requested — annotations locked.</div>
-                ) : (
-                    <div>
-                        <h3>{editingId ? 'Edit Annotation' : selected ? `New annotation for ${selected}` : 'Select an object to annotate'}</h3>
-                        {selected && (
-                            <div>
-                                <textarea value={text} onInput={(e: Event) => setText((e.target as HTMLTextAreaElement).value)} />
-                                <div>
-                                    <button onClick={handleSave} disabled={!text.trim()}>
-                                        {editingId ? 'Save Changes' : 'Save Draft'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
+            <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>
 
-            <div>
-                <button onClick={handleRequestReview} disabled={isLocked || userAnnotations.filter((a) => a.status === 'draft').length === 0}>
+            <div class="set-actions">
+                <button
+                    class="px-3 py-2 bg-green-600 text-white rounded"
+                    onClick={handleRequestReview}
+                    disabled={isLocked || userAnnotations.filter((a) => a.status === 'draft').length === 0}
+                >
                     Request Review for Set
                 </button>
             </div>
