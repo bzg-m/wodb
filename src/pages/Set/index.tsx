@@ -1,14 +1,17 @@
 import { h } from 'preact';
-import { useState } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
+import type { Annotation } from '../../data';
 import { useLocation } from 'preact-iso';
 import {
     getSetById,
-    saveAnnotation,
-    requestReviewForUserInSet,
-    getUserAnnotationsForSet,
-    deleteAnnotation,
-    getVisibleAnnotationsForUserInSet,
 } from '../../dataStore';
+import {
+    fetchUserAnnotationsForSet,
+    createOrUpdateAnnotation,
+    removeAnnotation,
+    sendRequestReview,
+    fetchVisibleAnnotationsForUserInSet,
+} from '../../api';
 import { useUser } from '../../UserContext';
 import { users as allUsers } from '../../data';
 
@@ -21,7 +24,6 @@ export function SetPage(): preact.JSX.Element {
     const [selected, setSelected] = useState<string | null>(null);
     const [text, setText] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [version, setVersion] = useState(0); // bump to cause re-render after data changes
 
     if (!set) {
         return (
@@ -41,16 +43,46 @@ export function SetPage(): preact.JSX.Element {
         );
     }
 
-    const userAnnotations = getUserAnnotationsForSet(user.id, set.id);
+    const [userAnnotations, setUserAnnotations] = useState<Annotation[]>([]);
+    const [visibleAnnotations, setVisibleAnnotations] = useState<Annotation[]>([]);
+    const [reflectionMode, setReflectionMode] = useState(false);
+
+    // Derived values computed from `userAnnotations` to avoid duplicated state.
     const isLocked = userAnnotations.some((a) => a.status === 'pending');
     const hasAccepted = userAnnotations.some((a) => a.status === 'accepted');
-    const [reflectionMode, setReflectionMode] = useState(false);
 
     function openObjectForNew(objId: string) {
         setSelected(objId);
         setEditingId(null);
         setText('');
     }
+
+    useEffect(() => {
+        let mounted = true;
+        async function load() {
+            const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+            if (!mounted) return;
+            setUserAnnotations(anns as Annotation[]);
+        }
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [user.id, set.id]);
+
+    useEffect(() => {
+        let mounted = true;
+        async function loadVisible() {
+            if (!hasAccepted && !reflectionMode) return;
+            const vis = await fetchVisibleAnnotationsForUserInSet(user.id, set.id);
+            if (!mounted) return;
+            setVisibleAnnotations(vis as Annotation[]);
+        }
+        loadVisible();
+        return () => {
+            mounted = false;
+        };
+    }, [user.id, set.id, hasAccepted, reflectionMode]);
 
     function openAnnotationForEdit(aId: string) {
         const a = userAnnotations.find((x) => x.id === aId);
@@ -60,12 +92,12 @@ export function SetPage(): preact.JSX.Element {
         setText(a.text);
     }
 
-    function handleSave() {
+    async function handleSave() {
         if (!user || !selected) return;
         if (isLocked) return;
 
         if (editingId) {
-            saveAnnotation({
+            await createOrUpdateAnnotation({
                 id: editingId,
                 setId: set.id,
                 objectId: selected,
@@ -75,7 +107,7 @@ export function SetPage(): preact.JSX.Element {
                 visibility: 'private',
             });
         } else {
-            saveAnnotation({
+            await createOrUpdateAnnotation({
                 setId: set.id,
                 objectId: selected,
                 userId: user.id,
@@ -86,19 +118,23 @@ export function SetPage(): preact.JSX.Element {
         }
         setEditingId(null);
         setText('');
-        setVersion((v) => v + 1);
+        // refresh user's annotations and state
+        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        setUserAnnotations(anns as any);
     }
 
-    function handleDelete(aId: string) {
+    async function handleDelete(aId: string) {
         if (isLocked) return;
-        deleteAnnotation(aId);
-        setVersion((v) => v + 1);
+        await removeAnnotation(aId);
+        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        setUserAnnotations(anns as any);
     }
 
-    function handleRequestReview() {
+    async function handleRequestReview() {
         if (!user) return;
-        requestReviewForUserInSet(user.id, set.id);
-        setVersion((v) => v + 1);
+        await sendRequestReview(user.id, set.id);
+        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        setUserAnnotations(anns as any);
     }
 
     function renderAnnotationPanel(): preact.JSX.Element {
@@ -211,7 +247,7 @@ export function SetPage(): preact.JSX.Element {
                             </tr>
                         </thead>
                         <tbody>
-                            {getVisibleAnnotationsForUserInSet(user.id, set.id).map((a) => {
+                            {(visibleAnnotations || []).map((a) => {
                                 const obj = set.objects.find((o) => o.id === a.objectId);
                                 const u = allUsers.find((uu) => uu.id === a.userId);
                                 return (
