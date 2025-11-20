@@ -7,8 +7,10 @@ import {
     requestReviewForUserInSet,
     getUserAnnotationsForSet,
     deleteAnnotation,
+    getVisibleAnnotationsForUserInSet,
 } from '../../dataStore';
 import { useUser } from '../../UserContext';
+import { users as allUsers } from '../../data';
 
 export function SetPage(): preact.JSX.Element {
     const { url } = useLocation();
@@ -41,6 +43,8 @@ export function SetPage(): preact.JSX.Element {
 
     const userAnnotations = getUserAnnotationsForSet(user.id, set.id);
     const isLocked = userAnnotations.some((a) => a.status === 'pending');
+    const hasAccepted = userAnnotations.some((a) => a.status === 'accepted');
+    const [reflectionMode, setReflectionMode] = useState(false);
 
     function openObjectForNew(objId: string) {
         setSelected(objId);
@@ -128,6 +132,16 @@ export function SetPage(): preact.JSX.Element {
             <h2 class="text-2xl font-semibold">{set.title}</h2>
             <p class="text-sm text-gray-600 mb-4">{set.description}</p>
 
+            <div class="mb-4">
+                {hasAccepted ? (
+                    <button class="px-2 py-1 bg-indigo-600 text-white rounded" onClick={() => setReflectionMode((v) => !v)}>
+                        {reflectionMode ? 'Exit Reflection View' : 'Enter Reflection View'}
+                    </button>
+                ) : (
+                    <span class="text-sm text-gray-500">Create and get at least one accepted annotation to enable Reflection View.</span>
+                )}
+            </div>
+
             <div class="grid grid-cols-4 gap-2 mb-6">
                 {set.objects.map((o) => (
                     <button
@@ -183,17 +197,50 @@ export function SetPage(): preact.JSX.Element {
                 </tbody>
             </table>
 
-            <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>
+            {reflectionMode ? (
+                <section class="bg-gray-50 p-4 rounded">
+                    <h3 class="text-lg mb-2">Reflection — visible annotations</h3>
+                    <p class="text-sm text-gray-600 mb-4">You are viewing annotations visible to you (public + group if you have an accepted annotation).</p>
+                    <table class="min-w-full bg-white border">
+                        <thead>
+                            <tr class="bg-gray-100 text-left">
+                                <th class="p-2">Object</th>
+                                <th class="p-2">Annotation</th>
+                                <th class="p-2">User</th>
+                                <th class="p-2">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {getVisibleAnnotationsForUserInSet(user.id, set.id).map((a) => {
+                                const obj = set.objects.find((o) => o.id === a.objectId);
+                                const u = allUsers.find((uu) => uu.id === a.userId);
+                                return (
+                                    <tr>
+                                        <td class="p-2 align-top">{obj ? obj.value : a.objectId}</td>
+                                        <td class="p-2 align-top break-words">{a.text}</td>
+                                        <td class="p-2 align-top">{u ? u.name : a.userId}</td>
+                                        <td class="p-2 align-top">{a.status}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </section>
+            ) : (
+                <>
+                    <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>
 
-            <div class="set-actions">
-                <button
-                    class="px-3 py-2 bg-green-600 text-white rounded"
-                    onClick={handleRequestReview}
-                    disabled={isLocked || userAnnotations.filter((a) => a.status === 'draft').length === 0}
-                >
-                    Request Review for Set
-                </button>
-            </div>
+                    <div class="set-actions">
+                        <button
+                            class="px-3 py-2 bg-green-600 text-white rounded"
+                            onClick={handleRequestReview}
+                            disabled={isLocked || userAnnotations.filter((a) => a.status === 'draft').length === 0}
+                        >
+                            Request Review for Set
+                        </button>
+                    </div>
+                </>
+            )}
         </section>
     );
 }

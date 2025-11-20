@@ -67,3 +67,14 @@ export function setAnnotationVisibility(annotationId: string, visibility: Annota
     a.visibility = visibility;
     return a;
 }
+
+export function getVisibleAnnotationsForUserInSet(userId: string, setId: string): Annotation[] {
+    const all = getAnnotationsForSet(setId);
+    const userHasAccepted = all.some((a) => a.userId === userId && a.status === 'accepted');
+    return all.filter((a) => {
+        if (a.userId === userId) return true; // always see your own annotations
+        if (a.visibility === 'public') return true;
+        if (a.visibility === 'group' && userHasAccepted) return true;
+        return false;
+    });
+}
