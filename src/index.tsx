@@ -8,6 +8,7 @@ import './style.css';
 import { UserProvider } from './UserContext';
 
 const SetPage = lazy(() => import('./pages/Set/index'));
+const AdminPage = lazy(() => import('./pages/Admin/index'));
 
 export function App() {
 	return (
@@ -18,6 +19,7 @@ export function App() {
 					<Router>
 						<Route path="/" component={Home} />
 						<Route path="/set/:id" component={SetPage} />
+						<Route path="/admin" component={AdminPage} />
 						<Route default component={NotFound} />
 					</Router>
 				</main>

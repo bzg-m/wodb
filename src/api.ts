@@ -43,6 +43,11 @@ export async function fetchVisibleAnnotationsForUserInSet(userId: string, setId:
     return ds.getVisibleAnnotationsForUserInSet(userId, setId);
 }
 
+export async function fetchAnnotationsForSet(setId: string, token?: string): Promise<Annotation[]> {
+    await delay();
+    return ds.getAnnotationsForSet(setId);
+}
+
 export async function updateAnnotationVisibility(annotationId: string, visibility: AnnotationVisibility, token?: string) {
     await delay();
     return ds.setAnnotationVisibility(annotationId, visibility);

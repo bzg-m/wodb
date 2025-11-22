@@ -20,6 +20,11 @@ export function Header() {
 				<a href="/" class={url == '/' ? 'active' : ''}>
 					Home
 				</a>
+				{user && user.isAdmin && (
+					<a href="/admin" class={url == '/admin' ? 'active' : ''}>
+						Admin
+					</a>
+				)}
 				<a href="/404" class={url == '/404' ? 'active' : ''}>
 					404
 				</a>
