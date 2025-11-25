@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test --if-present
+        run: npm test:nowatch --if-present -- --reporter verbose --threads=1
         env:
           CI: true
         timeout-minutes: 1
