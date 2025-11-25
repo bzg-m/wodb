@@ -1,15 +1,15 @@
-# `create-preact`
+# Which One Doesn't Belong (WODB)
 
-<h2 align="center">
-  <img height="256" width="256" src="./src/assets/preact.svg">
-</h2>
+A small Preact + Vite single-page app prototype for classroom math discussion: users annotate which of four items "doesn't belong", request review, and reflect on accepted annotations.
 
-<h3 align="center">Get started using Preact and Vite!</h3>
+This repository contains an early demo MVP. More documentation, deployment notes, and backend integration details will be added to this README shortly.
 
-## Getting Started
+## Quick commands
 
--   `npm run dev` - Starts a dev server at http://localhost:5173/
+- `npm run dev` — start the dev server
+- `npm run build` — build production assets
+- `npm run preview` — preview the production build locally
 
--   `npm run build` - Builds for production, emitting to `dist/`
+## License
 
--   `npm run preview` - Starts a server at http://localhost:4173/ to test production build locally
+This project is available under the MIT License (see `LICENSE`).
