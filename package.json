@@ -5,8 +5,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "vitest",
-		"test:nowatch": "vitest run"
+		"test": "vitest"
 	},
 	"dependencies": {
 		"preact": "^10.26.9",
