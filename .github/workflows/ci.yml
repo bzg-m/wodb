@@ -29,3 +29,6 @@ jobs:
 
       - name: Run tests
         run: npm test --if-present
+        env:
+          CI: true
+        timeout-minutes: 1
