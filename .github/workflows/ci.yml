@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: [24.x, 25.x]
 
     steps:
       - name: Checkout repository
@@ -28,7 +28,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test --if-present -- --run --reporter verbose --no-file-parallelism
+        run: npm test --if-present -- --run --reporter verbose
         env:
           CI: true
         timeout-minutes: 1
