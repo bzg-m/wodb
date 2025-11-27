@@ -5,11 +5,15 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite preview",
-		"test": "vitest"
+		"test": "vitest",
+		"server": "node --loader ts-node/esm src/server/server.ts"
 	},
 	"dependencies": {
-		"preact": "^10.26.9",
-		"preact-iso": "^2.11.0"
+		"preact": "^10.27.2",
+		"preact-iso": "^2.11.0",
+		"express": "^5.1.0",
+		"cors": "^2.8.5",
+		"uuid": "^13.0.0"
 	},
 	"devDependencies": {
 		"@preact/preset-vite": "^2.10.2",
@@ -23,6 +27,9 @@
 		"eslint-config-preact": "^2.0.0",
 		"jsdom": "^27.2.0",
 		"typescript": "^5.9.3",
+		"ts-node": "^10.9.2",
+		"supertest": "^7.1.4",
+		"@types/express": "^4.17.21",
 		"vite": "^7.0.4",
 		"vitest": "^4.0.13"
 	},
