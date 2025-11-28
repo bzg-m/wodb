@@ -14,12 +14,26 @@ import {
 } from './dataStore.js';
 import type { Annotation, AnnotationStatus, AnnotationVisibility } from '../data.js';
 
+// TODO: separate into different repo.
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// TODO: add auth, cors.
+
+function getCurrentUser(req: Request): string | null {
+    // TODO: implement authentication to get current user.  For now, we trust the request.
+    let userId = req.query.userId as string | null;
+    if (!userId) {
+        userId = req.body?.userId || null;
+    }
+    return userId;
+}
+
 // Routes
 app.get('/api/sets', (_req: Request, res: Response) => {
+    // TODO: implement pagination, filtering, etc.
     res.json({ sets: getSets() });
 });
 
@@ -30,8 +44,9 @@ app.get('/api/sets/:setid', (req: Request, res: Response) => {
 });
 
 app.get('/api/sets/:setid/annotations', (req: Request, res: Response) => {
+    // TODO: implement pagination, filtering, etc.
     const { setid } = req.params;
-    const userId = req.query.userId as string | undefined;
+    const userId = getCurrentUser(req);
     if (userId) {
         return res.json({ annotations: getUserAnnotationsForSet(userId, setid) });
     }
@@ -40,12 +55,15 @@ app.get('/api/sets/:setid/annotations', (req: Request, res: Response) => {
 
 app.get('/api/sets/:setid/visible', (req: Request, res: Response) => {
     const { setid } = req.params;
-    const userId = req.query.userId as string | undefined;
+    const userId = getCurrentUser(req);
     const anns = getVisibleAnnotationsForUserInSet(userId || '', setid);
     res.json({ annotations: anns });
 });
 
 app.post('/api/annotations', (req: Request, res: Response) => {
+    // TODO: consider separating create vs update endpoints.
+    // TODO: since annotations belong to sets, consider making endpoint /api/sets/:setid/annotations:
+    //   see https://google.aip.dev/122.
     const ann = req.body;
     if (!ann) return res.status(400).json({ error: 'missing body' });
     const result = saveAnnotation(ann);
@@ -60,24 +78,24 @@ app.delete('/api/annotations/:id', (req: Request, res: Response) => {
 
 app.post('/api/sets/:setid/request-review', (req: Request, res: Response) => {
     const { setid } = req.params;
-    const { userId } = req.body as { userId?: string };
+    const userId = getCurrentUser(req);
     if (!userId) return res.status(400).json({ error: 'missing userId' });
     const changed = requestReviewForUserInSet(userId, setid);
     res.json({ changed });
 });
 
-app.post('/api/annotations/:id/visibility', (req: Request, res: Response) => {
-    const { id } = req.params;
+app.post('/api/annotations/:annotationId/visibility', (req: Request, res: Response) => {
+    const { annotationId } = req.params;
     const { visibility } = req.body as { visibility?: AnnotationVisibility };
-    const updated = setAnnotationVisibility(id, visibility);
+    const updated = setAnnotationVisibility(annotationId, visibility);
     if (!updated) return res.status(404).json({ error: 'not found' });
     res.json({ annotation: updated });
 });
 
-app.post('/api/annotations/:id/status', (req: Request, res: Response) => {
-    const { id } = req.params;
+app.post('/api/annotations/:annotationId/status', (req: Request, res: Response) => {
+    const { annotationId } = req.params;
     const { status } = req.body as { status?: AnnotationStatus };
-    const updated = setAnnotationStatus(id, status);
+    const updated = setAnnotationStatus(annotationId, status);
     if (!updated) return res.status(404).json({ error: 'not found' });
     res.json({ annotation: updated });
 });
