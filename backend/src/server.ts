@@ -13,6 +13,7 @@ import {
     getVisibleAnnotationsForUserInSet,
 } from './dataStore.js';
 import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
+import { connectDB } from './db.js';
 
 const app = express();
 app.use(cors());
@@ -27,78 +28,118 @@ function getCurrentUser(req: Request): string | null {
     return userId;
 }
 
-app.get('/api/sets', (_req: Request, res: Response) => {
+app.get('/api/sets', async (_req: Request, res: Response) => {
     // TODO: implement pagination, filtering, etc.
-    res.json({ sets: getSets() });
+    try {
+        const sets = await getSets();
+        res.json({ sets });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-app.get('/api/sets/:setid', (req: Request, res: Response) => {
-    const set = getSetById(req.params.setid);
-    if (!set) return res.status(404).json({ error: 'not found' });
-    res.json({ set });
+app.get('/api/sets/:setid', async (req: Request, res: Response) => {
+    try {
+        const set = await getSetById(req.params.setid);
+        if (!set) return res.status(404).json({ error: 'not found' });
+        res.json({ set });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-app.get('/api/sets/:setid/annotations', (req: Request, res: Response) => {
+app.get('/api/sets/:setid/annotations', async (req: Request, res: Response) => {
     // TODO: implement pagination, filtering, etc.
     // TODO: only show visible annotations unless admin
     const { setid } = req.params;
     const userId = getCurrentUser(req);
-    if (userId) {
-        return res.json({ annotations: getUserAnnotationsForSet(userId, setid) });
+    try {
+        if (userId) {
+            const anns = await getUserAnnotationsForSet(userId, setid);
+            return res.json({ annotations: anns });
+        }
+        const anns = await getAnnotationsForSet(setid);
+        return res.json({ annotations: anns });
+    } catch (err: any) {
+        return res.status(500).json({ error: String(err) });
     }
-    return res.json({ annotations: getAnnotationsForSet(setid) });
 });
 
-app.get('/api/sets/:setid/visible', (req: Request, res: Response) => {
+app.get('/api/sets/:setid/visible', async (req: Request, res: Response) => {
     // TODO: remove
     const { setid } = req.params;
     const userId = getCurrentUser(req);
-    const anns = getVisibleAnnotationsForUserInSet(userId || '', setid);
-    res.json({ annotations: anns });
+    try {
+        const anns = await getVisibleAnnotationsForUserInSet(userId || '', setid);
+        res.json({ annotations: anns });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-app.post('/api/annotations', (req: Request, res: Response) => {
+app.post('/api/annotations', async (req: Request, res: Response) => {
     // TODO: since annotations belong to sets, consider making endpoint /api/sets/:setid/annotations:
     //   see https://google.aip.dev/122.
     const ann = req.body as Annotation | undefined;
     if (!ann) return res.status(400).json({ error: 'missing body' });
-    const result = saveAnnotation(ann as any);
-    return res.status(ann.id ? 200 : 201).json({ annotation: result });
+    try {
+        const result = await saveAnnotation(ann as any);
+        return res.status(ann.id ? 200 : 201).json({ annotation: result });
+    } catch (err: any) {
+        return res.status(500).json({ error: String(err) });
+    }
 });
 
-app.delete('/api/annotations/:annotationId', (req: Request, res: Response) => {
-    const ok = deleteAnnotation(req.params.annotationId);
-    if (!ok) return res.status(404).json({ error: 'not found' });
-    return res.status(204).end();
+app.delete('/api/annotations/:annotationId', async (req: Request, res: Response) => {
+    try {
+        const ok = await deleteAnnotation(req.params.annotationId);
+        if (!ok) return res.status(404).json({ error: 'not found' });
+        return res.status(204).end();
+    } catch (err: any) {
+        return res.status(500).json({ error: String(err) });
+    }
 });
 
-app.post('/api/sets/:setid/request-review', (req: Request, res: Response) => {
+app.post('/api/sets/:setid/request-review', async (req: Request, res: Response) => {
     const { setid } = req.params;
     const userId = getCurrentUser(req);
     if (!userId) return res.status(400).json({ error: 'missing userId' });
-    const changed = requestReviewForUserInSet(userId, setid);
-    res.json({ changed });
+    try {
+        const changed = await requestReviewForUserInSet(userId, setid);
+        res.json({ changed });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-app.post('/api/annotations/:annotationId/visibility', (req: Request, res: Response) => {
+app.post('/api/annotations/:annotationId/visibility', async (req: Request, res: Response) => {
     // TODO: replace with PATCH on main /api/annotations/:annotationId endpoint
     const { annotationId } = req.params;
     const { visibility } = req.body as { visibility?: AnnotationVisibility };
-    const updated = setAnnotationVisibility(annotationId, visibility as any);
-    if (!updated) return res.status(404).json({ error: 'not found' });
-    res.json({ annotation: updated });
+    try {
+        const updated = await setAnnotationVisibility(annotationId, visibility as any);
+        if (!updated) return res.status(404).json({ error: 'not found' });
+        res.json({ annotation: updated });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-app.post('/api/annotations/:annotationId/status', (req: Request, res: Response) => {
+app.post('/api/annotations/:annotationId/status', async (req: Request, res: Response) => {
     // TODO: replace with PATCH on main /api/annotations/:annotationId endpoint
     const { annotationId } = req.params;
     const { status } = req.body as { status?: AnnotationStatus };
-    const updated = setAnnotationStatus(annotationId, status as any);
-    if (!updated) return res.status(404).json({ error: 'not found' });
-    res.json({ annotation: updated });
+    try {
+        const updated = await setAnnotationStatus(annotationId, status as any);
+        if (!updated) return res.status(404).json({ error: 'not found' });
+        res.json({ annotation: updated });
+    } catch (err: any) {
+        res.status(500).json({ error: String(err) });
+    }
 });
 
-export function start(port = Number(process.env.PORT) || 4000) {
+export async function start(port = Number(process.env.PORT) || 4000) {
+    await connectDB();
     const server = app.listen(port, () => {
         // eslint-disable-next-line no-console
         console.log(`Backend server running at http://localhost:${port}`);
