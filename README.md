@@ -14,6 +14,36 @@ This repository contains an early demo MVP. More documentation, deployment notes
 
 If you're doing feature work that touches both frontend and backend, use `npm run dev:full`. For quick UI changes you can run the frontend-only command, and for backend-only work (API changes, DB migrations, seeding) use the backend command shown above.
 
+Important notes about `dev:full` and serving the frontend
+- The `dev:full` script now waits for the backend readiness endpoint before starting the frontend dev server. It waits on `http://localhost:4000/health` so the frontend's dev proxy has a healthy backend target.
+- By default the backend will NOT serve `frontend/dist` while developing (to avoid accidentally serving stale built files). Static serving is enabled only when `NODE_ENV=production` or when you set `SERVE_STATIC=1`.
+- If a `frontend/dist` build exists from a previous run, `dev:full` will not serve it unless you explicitly enable static serving. This prevents the backend from serving older built assets instead of the live Vite dev server.
+
+Typical workflows
+- Development with HMR (recommended):
+
+```bash
+# start everything (backend + frontend dev server with HMR)
+npm run dev:full
+```
+
+- Previewing a production build (backend serves built assets):
+
+```bash
+# build frontend
+npm --prefix frontend run build
+
+# start backend and serve the built frontend
+NODE_ENV=production npm --prefix backend run start
+```
+
+- Force the backend to serve an existing `frontend/dist` during development (not recommended for HMR):
+
+```bash
+# set the flag and start dev:full
+SERVE_STATIC=1 npm run dev:full
+```
+
 ## Running the backend with MongoDB (local development)
 
 The backend uses MongoDB for persistence. For local development you have two convenient options:

@@ -1,5 +1,8 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import {
     getSets,
     getSetById,
@@ -137,6 +140,43 @@ app.post('/api/annotations/:annotationId/status', async (req: Request, res: Resp
         res.status(500).json({ error: String(err) });
     }
 });
+
+// Health endpoint for readiness checks
+app.get('/health', (_req: Request, res: Response) => {
+    res.json({ status: 'ok' });
+});
+
+// Resolve frontend build path relative to this file so static serving works
+// regardless of the process CWD (nodemon runs from /backend during dev).
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDist = path.resolve(__dirname, '..', '..', 'frontend', 'dist');
+const indexHtmlPath = path.join(clientDist, 'index.html');
+
+// In development we prefer the Vite dev server (HMR). Only serve the
+// production-built frontend when NODE_ENV=production or SERVE_STATIC=1.
+const shouldServeStatic = process.env.NODE_ENV === 'production' || process.env.SERVE_STATIC === '1';
+if (shouldServeStatic) {
+    // Register static serving. express.static will serve files if present
+    // and otherwise call next(). We still check for index.html on each
+    // request so the build can be updated without restarting the backend.
+    app.use(express.static(clientDist));
+
+    app.use((req: Request, res: Response, next) => {
+        if (req.path.startsWith('/api') || req.path === '/api') return next();
+        if (!fs.existsSync(indexHtmlPath)) return next();
+        res.sendFile(indexHtmlPath, (err) => {
+            if (err) {
+                // eslint-disable-next-line no-console
+                console.error('Error sending index.html:', err && err.message);
+                return next(err);
+            }
+        });
+    });
+} else {
+    // eslint-disable-next-line no-console
+    console.log('Running in dev mode; skipping serving built frontend. Set SERVE_STATIC=1 to override.');
+}
 
 export async function start(port = Number(process.env.PORT) || 4000) {
     await connectDB();

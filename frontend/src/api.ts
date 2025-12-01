@@ -1,6 +1,7 @@
 import type { WODBSet, Annotation, AnnotationVisibility } from './data';
 
-const BASE = (import.meta.env.VITE_API_BASE as string) || 'http://localhost:4000';
+// Default to same-origin so production (served by Express) works without CORS.
+const BASE = (import.meta.env.VITE_API_BASE as string) ?? '';
 
 async function req(path: string, opts: RequestInit = {}) {
     const url = `${BASE}${path}`;
