@@ -17,13 +17,17 @@ import {
 } from './dataStore.js';
 import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
 import { connectDB } from './db.js';
+import { verifyFirebaseToken } from './middleware/auth.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 function getCurrentUser(req: Request): string | null {
-    // TODO: implement authentication to get current user.  For now, we trust the request.
+    // TODO: remove fallback of getting user from request.
+    // If auth middleware populated `req.user`, prefer that.
+    const maybeUser = (req as any).user as { uid?: string } | undefined;
+    if (maybeUser?.uid) return maybeUser.uid;
     let userId = req.query.userId as string | null;
     if (!userId) {
         userId = req.body?.userId || null;
@@ -80,7 +84,7 @@ app.get('/api/sets/:setid/visible', async (req: Request, res: Response) => {
     }
 });
 
-app.post('/api/annotations', async (req: Request, res: Response) => {
+app.post('/api/annotations', verifyFirebaseToken, async (req: Request, res: Response) => {
     // TODO: since annotations belong to sets, consider making endpoint /api/sets/:setid/annotations:
     //   see https://google.aip.dev/122.
     const ann = req.body as Annotation | undefined;
@@ -93,7 +97,7 @@ app.post('/api/annotations', async (req: Request, res: Response) => {
     }
 });
 
-app.delete('/api/annotations/:annotationId', async (req: Request, res: Response) => {
+app.delete('/api/annotations/:annotationId', verifyFirebaseToken, async (req: Request, res: Response) => {
     try {
         const ok = await deleteAnnotation(req.params.annotationId);
         if (!ok) return res.status(404).json({ error: 'not found' });
@@ -103,7 +107,7 @@ app.delete('/api/annotations/:annotationId', async (req: Request, res: Response)
     }
 });
 
-app.post('/api/sets/:setid/request-review', async (req: Request, res: Response) => {
+app.post('/api/sets/:setid/request-review', verifyFirebaseToken, async (req: Request, res: Response) => {
     const { setid } = req.params;
     const userId = getCurrentUser(req);
     if (!userId) return res.status(400).json({ error: 'missing userId' });
@@ -115,7 +119,7 @@ app.post('/api/sets/:setid/request-review', async (req: Request, res: Response) 
     }
 });
 
-app.post('/api/annotations/:annotationId/visibility', async (req: Request, res: Response) => {
+app.post('/api/annotations/:annotationId/visibility', verifyFirebaseToken, async (req: Request, res: Response) => {
     // TODO: replace with PATCH on main /api/annotations/:annotationId endpoint
     const { annotationId } = req.params;
     const { visibility } = req.body as { visibility?: AnnotationVisibility };
@@ -128,7 +132,7 @@ app.post('/api/annotations/:annotationId/visibility', async (req: Request, res: 
     }
 });
 
-app.post('/api/annotations/:annotationId/status', async (req: Request, res: Response) => {
+app.post('/api/annotations/:annotationId/status', verifyFirebaseToken, async (req: Request, res: Response) => {
     // TODO: replace with PATCH on main /api/annotations/:annotationId endpoint
     const { annotationId } = req.params;
     const { status } = req.body as { status?: AnnotationStatus };

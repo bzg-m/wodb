@@ -1,11 +1,15 @@
 import type { WODBSet, Annotation, AnnotationVisibility } from './data';
+import { getIdToken } from './firebase';
 
 // Default to same-origin so production (served by Express) works without CORS.
 const BASE = (import.meta.env.VITE_API_BASE as string) ?? '';
 
 async function req(path: string, opts: RequestInit = {}) {
     const url = `${BASE}${path}`;
-    const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    const token = await getIdToken();
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(url, { headers, ...opts });
     if (!res.ok) {
         const text = await res.text();
         throw new Error(`API error ${res.status}: ${text}`);
