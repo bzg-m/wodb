@@ -64,7 +64,7 @@ export function SetPage(): preact.JSX.Element {
         let mounted = true;
         async function load() {
             if (!set || !user) return;
-            const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+            const anns = await fetchUserAnnotationsForSet(set.id);
             if (!mounted) return;
             setUserAnnotations(anns as Annotation[]);
         }
@@ -72,14 +72,14 @@ export function SetPage(): preact.JSX.Element {
         return () => {
             mounted = false;
         };
-    }, [user?.id, set?.id]);
+    }, [user?.uid, set?.id]);
 
     useEffect(() => {
         let mounted = true;
         async function loadVisible() {
             if (!set || !user) return;
             if (!hasAccepted && !reflectionMode) return;
-            const vis = await fetchVisibleAnnotationsForUserInSet(user.id, set.id);
+            const vis = await fetchVisibleAnnotationsForUserInSet(set.id);
             if (!mounted) return;
             setVisibleAnnotations(vis as Annotation[]);
         }
@@ -87,7 +87,7 @@ export function SetPage(): preact.JSX.Element {
         return () => {
             mounted = false;
         };
-    }, [user?.id, set?.id, hasAccepted, reflectionMode]);
+    }, [user?.uid, set?.id, hasAccepted, reflectionMode]);
 
     function openAnnotationForEdit(aId: string) {
         const a = userAnnotations.find((x) => x.id === aId);
@@ -106,7 +106,7 @@ export function SetPage(): preact.JSX.Element {
                 id: editingId,
                 setId: set.id,
                 objectId: selected,
-                userId: user.id,
+                userId: user.uid,
                 text,
                 status: 'draft',
                 visibility: 'private',
@@ -115,7 +115,7 @@ export function SetPage(): preact.JSX.Element {
             await createOrUpdateAnnotation({
                 setId: set.id,
                 objectId: selected,
-                userId: user.id,
+                userId: user.uid,
                 text,
                 status: 'draft',
                 visibility: 'private'
@@ -124,7 +124,7 @@ export function SetPage(): preact.JSX.Element {
         setEditingId(null);
         setText('');
         // refresh user's annotations and state
-        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        const anns = await fetchUserAnnotationsForSet(set.id);
         setUserAnnotations(anns as any);
     }
 
@@ -132,15 +132,15 @@ export function SetPage(): preact.JSX.Element {
         if (isLocked) return;
         await removeAnnotation(aId);
         if (!set) return;
-        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        const anns = await fetchUserAnnotationsForSet(set.id);
         setUserAnnotations(anns as any);
     }
 
     async function handleRequestReview() {
         if (!user) return;
         if (!set) return;
-        await sendRequestReview(user.id, set.id);
-        const anns = await fetchUserAnnotationsForSet(user.id, set.id);
+        await sendRequestReview(set.id);
+        const anns = await fetchUserAnnotationsForSet(set.id);
         setUserAnnotations(anns as any);
     }
 

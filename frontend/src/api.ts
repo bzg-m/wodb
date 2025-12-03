@@ -28,8 +28,8 @@ export async function fetchSetById(id: string): Promise<WODBSet | undefined> {
     return data.set as WODBSet | undefined;
 }
 
-export async function fetchUserAnnotationsForSet(userId: string, setId: string): Promise<Annotation[]> {
-    const data = await req(`/api/sets/${encodeURIComponent(setId)}/annotations?userId=${encodeURIComponent(userId)}`);
+export async function fetchUserAnnotationsForSet(setId: string): Promise<Annotation[]> {
+    const data = await req(`/api/sets/${encodeURIComponent(setId)}/annotations`);
     return data.annotations as Annotation[];
 }
 
@@ -44,14 +44,13 @@ export async function removeAnnotation(annotationId: string): Promise<boolean> {
     return true;
 }
 
-export async function sendRequestReview(userId: string, setId: string): Promise<any> {
-    const body = JSON.stringify({ userId });
-    const data = await req(`/api/sets/${encodeURIComponent(setId)}/request-review`, { method: 'POST', body });
+export async function sendRequestReview(setId: string): Promise<any> {
+    const data = await req(`/api/sets/${encodeURIComponent(setId)}/request-review`, { method: 'POST' });
     return data;
 }
 
-export async function fetchVisibleAnnotationsForUserInSet(userId: string, setId: string): Promise<Annotation[]> {
-    const data = await req(`/api/sets/${encodeURIComponent(setId)}/visible?userId=${encodeURIComponent(userId)}`);
+export async function fetchVisibleAnnotationsForUserInSet(setId: string): Promise<Annotation[]> {
+    const data = await req(`/api/sets/${encodeURIComponent(setId)}/visible`);
     return data.annotations as Annotation[];
 }
 

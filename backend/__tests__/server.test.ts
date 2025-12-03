@@ -1,9 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
+
+// Mock the data store before importing the server so tests are true unit tests.
+vi.mock('../src/dataStore.js', () => {
+    const sets = [
+        { id: 'set1', title: 'Set 1', objects: [{ id: 'o1' }, { id: 'o2' }, { id: 'o3' }, { id: 'o4' }] },
+        { id: 'set2', title: 'Set 2', objects: [] },
+    ];
+    return {
+        getSets: async () => sets,
+        getSetById: async (id: string) => sets.find((s) => s.id === id),
+    };
+});
+
 import { app } from '../src/server.js';
 import type { WODBObject, WODBSet } from '../src/data.js';
-
-// TODO: add mock data instead of using data in data.js.
 
 describe('server routes', () => {
     it('GET /api/sets returns sets', async () => {

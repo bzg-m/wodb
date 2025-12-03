@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => {
     return {
         getSets: vi.fn(() => [{ id: 'set1', title: 'Set 1', description: '', objects: [] }]),
         saveAnnotation: vi.fn((a: any) => ({ id: 'm1', ...a })),
-        getVisible: vi.fn((userId: string, setId: string) => []),
+        getVisible: vi.fn((setId: string) => []),
         getUserAnnotations: vi.fn((userId: string, setId: string) => []),
         deleteAnnotation: vi.fn(() => true),
         requestReviewForUserInSet: vi.fn(() => []),
@@ -27,8 +27,7 @@ globalThis.fetch = vi.fn(async (input: any, init?: any) => {
     if (pathname.endsWith('/visible')) {
         const parts = pathname.split('/');
         const setId = parts[3];
-        const userId = url.searchParams.get('userId') || '';
-        return { ok: true, json: async () => ({ annotations: mocks.getVisible(userId, setId) }) } as any;
+        return { ok: true, json: async () => ({ annotations: mocks.getVisible(setId) }) } as any;
     }
     return { ok: false, status: 404, text: async () => 'not found' } as any;
 });
@@ -54,7 +53,7 @@ describe('api shim', () => {
     });
 
     it('fetchVisibleAnnotationsForUserInSet calls API', async () => {
-        await api.fetchVisibleAnnotationsForUserInSet('u1', 'set1');
-        expect(mocks.getVisible).toHaveBeenCalledWith('u1', 'set1');
+        await api.fetchVisibleAnnotationsForUserInSet('set1');
+        expect(mocks.getVisible).toHaveBeenCalledWith('set1');
     });
 });

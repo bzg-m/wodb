@@ -55,6 +55,12 @@ export async function deleteAnnotation(annotationId: string): Promise<boolean> {
     return !!res;
 }
 
+export async function getAnnotationById(annotationId: string): Promise<Annotation | undefined> {
+    if (!mongoose.isValidObjectId(annotationId)) return undefined;
+    const doc = await AnnotationModel.findById(annotationId).exec();
+    return doc ? (doc.toJSON() as Annotation) : undefined;
+}
+
 export async function requestReviewForUserInSet(userId: string, setId: string): Promise<Annotation[]> {
     await AnnotationModel.updateMany({ userId, setId, status: 'draft' }, { $set: { status: 'pending' } }).exec();
     const changed = await AnnotationModel.find({ userId, setId, status: 'pending' }).exec();
