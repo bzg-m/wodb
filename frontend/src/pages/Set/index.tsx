@@ -9,6 +9,7 @@ import {
     removeAnnotation,
     sendRequestReview,
     fetchVisibleAnnotationsForUserInSet,
+    fetchUserNames,
 } from '../../api';
 import { useUser } from '../../UserContext';
 
@@ -26,6 +27,7 @@ export function SetPage(): preact.JSX.Element {
 
     const [userAnnotations, setUserAnnotations] = useState<Annotation[]>([]);
     const [visibleAnnotations, setVisibleAnnotations] = useState<Annotation[]>([]);
+    const [userNames, setUserNames] = useState<Record<string, string | null>>({});
     const [reflectionMode, setReflectionMode] = useState(false);
 
     useEffect(() => {
@@ -101,6 +103,30 @@ export function SetPage(): preact.JSX.Element {
             mounted = false;
         };
     }, [user?.uid, set?.id, hasAccepted, reflectionMode]);
+
+    // Resolve display names for users referenced by visibleAnnotations.
+    useEffect(() => {
+        let mounted = true;
+        async function loadNames() {
+            const ids = Array.from(new Set((visibleAnnotations || []).map((a) => a.userId))).filter((id) => !userNames.hasOwnProperty(id));
+            if (ids.length === 0) return;
+            try {
+                const res = await fetchUserNames(ids);
+                if (!mounted) return;
+                const next = { ...userNames };
+                for (const id of ids) {
+                    next[id] = res[id] ? res[id].name ?? null : null;
+                }
+                setUserNames(next);
+            } catch (err) {
+                // ignore failures; leave missing ids unpopulated
+            }
+        }
+        loadNames();
+        return () => {
+            mounted = false;
+        };
+    }, [visibleAnnotations]);
 
     function openAnnotationForEdit(aId: string) {
         const a = userAnnotations.find((x) => x.id === aId);
@@ -277,7 +303,10 @@ export function SetPage(): preact.JSX.Element {
                         <tbody>
                             {(visibleAnnotations || []).map((a) => {
                                 const obj = set.objects.find((o) => o.id === a.objectId);
-                                const uName = a.userId;
+                                // Prefer a provided display name if available (e.g. `userName` or `name`),
+                                // otherwise fall back to the raw `userId`.
+                                const resolved = userNames[a.userId];
+                                const uName = resolved ? `${resolved} (${a.userId})` : a.userId;
                                 return (
                                     <tr>
                                         <td class="p-2 align-top">{obj ? obj.value : a.objectId}</td>

@@ -6,6 +6,7 @@ import {
     fetchAllAnnotationsForSet,
     updateAnnotationStatus,
     updateAnnotationVisibility,
+    fetchUserNames,
 } from '../../api';
 import loadAdminAnnotations from './loadAdminAnnotations';
 import { useUser } from '../../UserContext';
@@ -18,6 +19,7 @@ export function AdminPage(): preact.JSX.Element {
     const [loading, setLoading] = useState(false);
     const [busyIds, setBusyIds] = useState<string[]>([]);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [userNames, setUserNames] = useState<Record<string, string | null>>({});
 
     useEffect(() => {
         let mounted = true;
@@ -33,6 +35,22 @@ export function AdminPage(): preact.JSX.Element {
                 setSets(s);
                 setPending(allPending);
                 setAccepted(allAccepted);
+                // Resolve user names for admin lists
+                try {
+                    const idsAll = Array.from(new Set([...allPending, ...allAccepted].map((a) => a.userId))).filter(Boolean);
+                    const ids = idsAll.filter((id) => !userNames.hasOwnProperty(id));
+                    if (ids.length > 0) {
+                        const res = await fetchUserNames(ids);
+                        if (!mounted) return;
+                        const next = { ...userNames };
+                        for (const id of ids) {
+                            next[id] = res[id] ? res[id].name ?? null : null;
+                        }
+                        setUserNames(next);
+                    }
+                } catch (err) {
+                    // ignore
+                }
             } catch (err) {
                 // network or API error — treat as empty state
                 if (!mounted) return;
@@ -172,7 +190,7 @@ export function AdminPage(): preact.JSX.Element {
                                     <td class="p-2 align-top">{set ? set.title : a.setId}</td>
                                     <td class="p-2 align-top">{a.objectId}</td>
                                     <td class="p-2 align-top break-words">{a.text}</td>
-                                    <td class="p-2 align-top">{a.userId}</td>
+                                    <td class="p-2 align-top">{userNames[a.userId] ? `${userNames[a.userId]} (${a.userId})` : a.userId}</td>
                                     <td class="p-2 align-top">{a.visibility}</td>
                                     <td class="p-2 align-top">
                                         <div class="flex gap-2 items-start">
@@ -216,7 +234,7 @@ export function AdminPage(): preact.JSX.Element {
                                         <td class="p-2 align-top">{set ? set.title : a.setId}</td>
                                         <td class="p-2 align-top">{a.objectId}</td>
                                         <td class="p-2 align-top break-words">{a.text}</td>
-                                        <td class="p-2 align-top">{a.userId}</td>
+                                        <td class="p-2 align-top">{userNames[a.userId] ? `${userNames[a.userId]} (${a.userId})` : a.userId}</td>
                                         <td class="p-2 align-top">
                                             <select class="border p-1" value={a.visibility} onChange={(e) => changeAcceptedVisibility(a.id, (e.target as HTMLSelectElement).value as any)} disabled={busyIds.includes(a.id)}>
                                                 <option value="group">group</option>

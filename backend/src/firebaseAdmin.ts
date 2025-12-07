@@ -9,6 +9,13 @@ import admin from 'firebase-admin';
 //    `admin.credential.applicationDefault()` which uses `GOOGLE_APPLICATION_CREDENTIALS`
 //    or GCP metadata when running on Google Cloud.
 function initAdmin() {
+    // If an app is already initialized in this process, reuse it.
+    // This avoids errors when tests or the runtime import this module
+    // multiple times with different credentials.
+    // `admin.apps` is an array of initialized apps.
+    if ((admin as any).apps && (admin as any).apps.length > 0) {
+        return admin;
+    }
     const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
     if (base64) {
         try {

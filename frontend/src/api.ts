@@ -54,6 +54,13 @@ export async function fetchVisibleAnnotationsForUserInSet(setId: string): Promis
     return data.annotations as Annotation[];
 }
 
+export async function fetchUserNames(ids: string[]): Promise<Record<string, { name?: string | null; email?: string | null }>> {
+    if (!ids || ids.length === 0) return {};
+    const q = `/api/users?ids=${encodeURIComponent(ids.join(','))}`;
+    const data = await req(q);
+    return data.users as Record<string, { name?: string | null; email?: string | null }>;
+}
+
 export async function fetchAnnotationsForSet(setId: string): Promise<Annotation[]> {
     const data = await req(`/api/sets/${encodeURIComponent(setId)}/annotations`);
     return data.annotations as Annotation[];

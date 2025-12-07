@@ -19,6 +19,35 @@ import {
 import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
 import { connectDB } from './db.js';
 import { verifyFirebaseToken } from './middleware/auth.js';
+import admin from './firebaseAdmin.js';
+
+// Simple in-memory cache for resolved user display names. This keeps recent
+// lookups available for a short TTL to avoid repeatedly hitting the Admin SDK
+// for the same UIDs. It's intentionally small and naive (no LRU) because it's
+// only intended to reduce duplicate work in moderate-traffic dev/prod usage.
+const USER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const userNameCache: Map<
+    string,
+    { name: string | null; fetchedAt: number }
+> = new Map();
+
+// TODO: Replace this process-local cache with a shared Redis (or similar)
+// cache when running multiple server instances. Redis would allow TTLs,
+// eviction, and cross-process sharing.
+
+// Minimal type helpers for Firebase Admin SDK responses. We intentionally
+// keep these narrow and defensive because the Admin SDK types vary between
+// runtime shapes and the test environment.
+type AdminUserRecord = { uid?: string; displayName?: string | null; email?: string | null; phoneNumber?: string | null };
+type AdminGetUsersResult = { users?: AdminUserRecord[]; notFound?: AdminUserRecord[] };
+
+function uidOfIdentifier(id: AdminUserRecord | any): string | undefined {
+    if (!id) return undefined;
+    if (typeof id.uid === 'string' && id.uid) return id.uid;
+    if (typeof id.email === 'string' && id.email) return id.email;
+    if (typeof id.phoneNumber === 'string' && id.phoneNumber) return id.phoneNumber;
+    return undefined;
+}
 
 const app = express();
 app.use(cors());
@@ -98,6 +127,60 @@ app.get('/api/sets/:setid/visible', verifyFirebaseToken, async (req: Request, re
         res.json({ annotations: anns });
     } catch (err: any) {
         res.status(500).json({ error: String(err) });
+    }
+});
+
+// Resolve user display names for a set of UIDs. Expects query param `ids` as
+// comma-separated list of user IDs. Requires authentication.
+app.get('/api/users', verifyFirebaseToken, async (req: Request, res: Response) => {
+    const idsParam = req.query.ids as string | undefined;
+    if (!idsParam) return res.status(400).json({ error: 'missing ids query parameter' });
+    const ids = idsParam.split(',').map((s) => s.trim()).filter(Boolean);
+    if (ids.length === 0) return res.status(400).json({ error: 'no ids provided' });
+    try {
+        // Consult cache first and only fetch missing ids from the Admin SDK.
+        const now = Date.now();
+        const users: Record<string, { name?: string | null }> = {};
+        const missing: string[] = [];
+        for (const id of ids) {
+            const cached = userNameCache.get(id);
+            if (cached && now - cached.fetchedAt < USER_CACHE_TTL) {
+                users[id] = { name: cached.name };
+            } else {
+                missing.push(id);
+            }
+        }
+
+        if (missing.length > 0) {
+            // Admin SDK `getUsers` accepts up to 100 identifiers. Split if needed.
+            const batchSize = 100;
+            for (let i = 0; i < missing.length; i += batchSize) {
+                const batch = missing.slice(i, i + batchSize);
+                const identifiers = batch.map((uid) => ({ uid }));
+                const raw = (await admin.auth().getUsers(identifiers as any)) as AdminGetUsersResult;
+                const found = raw.users || [];
+                const notFound = raw.notFound || [];
+                for (const u of found) {
+                    const uid = uidOfIdentifier(u);
+                    const name = u && u.displayName ? u.displayName : null;
+                    if (uid) {
+                        userNameCache.set(uid, { name, fetchedAt: Date.now() });
+                        users[uid] = { name };
+                    }
+                }
+                for (const nf of notFound) {
+                    const nfUid = uidOfIdentifier(nf);
+                    if (nfUid) {
+                        userNameCache.set(nfUid, { name: null, fetchedAt: Date.now() });
+                        users[nfUid] = { name: null };
+                    }
+                }
+            }
+        }
+
+        return res.json({ users });
+    } catch (err: any) {
+        return res.status(500).json({ error: String(err) });
     }
 });
 
