@@ -73,6 +73,20 @@ export function SetPage(): preact.JSX.Element {
         };
     }, [user?.uid, set?.id]);
 
+    // When the user logs out, clear user-specific state and exit reflection
+    // view so annotations and the reflection UI are not shown to anonymous
+    // visitors.
+    useEffect(() => {
+        if (!user) {
+            setUserAnnotations([]);
+            setVisibleAnnotations([]);
+            setReflectionMode(false);
+            setSelected(null);
+            setEditingId(null);
+            setText('');
+        }
+    }, [user]);
+
     useEffect(() => {
         let mounted = true;
         async function loadVisible() {
