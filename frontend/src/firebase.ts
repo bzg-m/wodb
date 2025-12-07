@@ -9,7 +9,7 @@ interface FirebaseClient {
     getIdToken(): Promise<NullableString>;
     isConfigured(): boolean;
     sendSignInLink(email: string): Promise<void>;
-    isSignInLink(url: string): boolean;
+    isSignInLink(url: string): Promise<boolean>;
     completeSignInWithEmailLink(email: string, url: string): Promise<boolean>;
     signOut(): Promise<void>;
     onAuthStateChanged(cb: (user: any) => void): () => void;
@@ -19,7 +19,7 @@ const noopClient: FirebaseClient = {
     getIdToken: async () => null,
     isConfigured: () => false,
     sendSignInLink: async () => undefined,
-    isSignInLink: () => false,
+    isSignInLink: async () => false,
     completeSignInWithEmailLink: async () => false,
     signOut: async () => undefined,
     onAuthStateChanged: () => () => { },
@@ -135,6 +135,12 @@ export function isFirebaseConfigured(): boolean {
     return hasFirebaseConfig && initialized;
 }
 
+// Returns true when Firebase config values are present (even if initialization
+// is still in progress).
+export function isFirebasePresent(): boolean {
+    return hasFirebaseConfig;
+}
+
 export default { getIdToken, isFirebaseConfigured };
 
 // Email link helpers
@@ -143,9 +149,15 @@ export async function sendSignInLink(email: string): Promise<void> {
     return client.sendSignInLink(email);
 }
 
-export function isSignInLink(url: string): boolean {
-    // safe to call without awaiting init because this just inspects the URL
-    return client.isSignInLink(url);
+export async function isSignInLink(url: string): Promise<boolean> {
+    // Wait for initialization so the real client (not the noop) can
+    // determine whether the URL is an email sign-in link.
+    await awaitInitIfNeeded();
+    try {
+        return client.isSignInLink(url);
+    } catch (err) {
+        return false;
+    }
 }
 
 export async function completeSignInWithEmailLink(email: string, url: string): Promise<boolean> {

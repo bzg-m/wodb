@@ -3,7 +3,7 @@ import { useContext, useEffect, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import {
     getIdToken,
-    isFirebaseConfigured,
+    isFirebasePresent,
     sendSignInLink,
     isSignInLink,
     completeSignInWithEmailLink,
@@ -33,7 +33,12 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!isFirebaseConfigured()) {
+        // If there is no firebase config at all, stop early. If config is
+        // present but initialization hasn't completed yet we still register
+        // the auth listener — `onFirebaseAuthStateChanged` waits for init and
+        // will subscribe when ready. This avoids a race where the component
+        // mounts before Firebase finishes initializing and never re-subscribes.
+        if (!isFirebasePresent()) {
             setLoading(false);
             return;
         }
@@ -45,7 +50,21 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
                 return;
             }
             try {
-                await getIdToken(); // warm token, ignore value here
+                // Prefer fetching the token from the `u` object provided by
+                // the auth callback. In some race conditions `auth.currentUser`
+                // may not yet be populated even though `u` is present; calling
+                // `u.getIdToken()` is more reliable here. Fall back to the
+                // exported `getIdToken()` when `u` doesn't expose the method.
+                if (typeof u.getIdToken === 'function') {
+                    try {
+                        await u.getIdToken(); // warm token, ignore value
+                    } catch (e) {
+                        // ignore token fetch failures here; downstream checks
+                        // will handle missing tokens.
+                    }
+                } else {
+                    await getIdToken(); // warm token, ignore value here
+                }
                 // Try to read token claims to determine admin status. Use
                 // `getIdTokenResult` on the Firebase user if available. We use
                 // promise `.catch()` here so failures are swallowed without a
@@ -69,7 +88,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
         (async () => {
             try {
                 const url = window.location.href;
-                if (isSignInLink(url)) {
+                if (await isSignInLink(url)) {
                     const storedEmail = localStorage.getItem('wodb:emailForSignIn');
                     if (storedEmail) {
                         const ok = await completeSignInWithEmailLink(storedEmail, url);
@@ -84,7 +103,14 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
             }
         })();
 
-        return () => unsub();
+        // Safety: if the auth callback never fires, avoid leaving the UI
+        // stuck in loading state indefinitely by clearing after 5s.
+        const safety = setTimeout(() => setLoading(false), 5000);
+
+        return () => {
+            clearTimeout(safety);
+            unsub();
+        };
     }, []);
 
     async function loginWithEmailLink(email: string) {
@@ -95,6 +121,8 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
     async function logout() {
         await firebaseSignOut();
         setUser(null);
+        // Ensure we don't remain in a loading state after an explicit logout.
+        setLoading(false);
     }
 
     const value: UserContextValue = { user, loading, loginWithEmailLink, logout };
