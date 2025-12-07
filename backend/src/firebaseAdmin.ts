@@ -26,9 +26,27 @@ function initAdmin() {
 
     // Prefer ADC (uses GOOGLE_APPLICATION_CREDENTIALS or GCP metadata).
     try {
-        admin.initializeApp({ credential: admin.credential.applicationDefault() });
-        // eslint-disable-next-line no-console
-        console.log('Initialized Firebase Admin using applicationDefault()');
+        // If running with the Auth emulator, the Admin SDK can be initialized
+        // without credentials and will direct Auth calls to the emulator when
+        // `FIREBASE_AUTH_EMULATOR_HOST` is set (e.g. "localhost:9099'). However
+        // in production we must NOT connect to the emulator even if the env var
+        // is present. Guard by checking NODE_ENV !== 'production'.
+        const emulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
+        const isProd = process.env.NODE_ENV === 'production';
+        if (emulatorHost && !isProd) {
+            const projectId = process.env.FIREBASE_PROJECT_ID || 'demo-project';
+            admin.initializeApp({ projectId });
+            // eslint-disable-next-line no-console
+            console.log(`Initialized Firebase Admin against Auth emulator at ${emulatorHost}`);
+        } else {
+            if (emulatorHost && isProd) {
+                // eslint-disable-next-line no-console
+                console.warn('FIREBASE_AUTH_EMULATOR_HOST is set but NODE_ENV=production — ignoring emulator and using application default credentials.');
+            }
+            admin.initializeApp({ credential: admin.credential.applicationDefault() });
+            // eslint-disable-next-line no-console
+            console.log('Initialized Firebase Admin using applicationDefault()');
+        }
     } catch (err) {
         // eslint-disable-next-line no-console
         console.error('Failed to initialize Firebase Admin with applicationDefault()', err);

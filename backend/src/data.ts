@@ -27,11 +27,8 @@ export interface Annotation {
 }
 
 // Hardcoded sample data
-export const users: { id: string; name: string; isAdmin: boolean }[] = [
-    { id: 'u1', name: 'Alice', isAdmin: false },
-    { id: 'u2', name: 'Bob', isAdmin: false },
-    { id: 'admin', name: 'Admin', isAdmin: true },
-];
+// The hardcoded `users` list has been removed. Use Firebase Auth + custom
+// claims to determine admin status in production and emulator environments.
 
 export const wodbSets: WODBSet[] = [
     {

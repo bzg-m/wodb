@@ -19,7 +19,6 @@ import {
 import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
 import { connectDB } from './db.js';
 import { verifyFirebaseToken } from './middleware/auth.js';
-import { users } from './data.js';
 
 const app = express();
 app.use(cors());
@@ -39,10 +38,9 @@ function getCurrentUser(req: Request): string | null {
 
 // TODO: Implement XSRF/CSRF protection for state-changing endpoints (POST/PUT/PATCH/DELETE).
 
-function isAdminUser(userId: string | null): boolean {
-    if (!userId) return false;
-    const u = users.find((x) => x.id === userId);
-    return !!(u && u.isAdmin);
+function isAdminUser(req: Request): boolean {
+    const maybe = (req as any).user as { claims?: Record<string, any> } | undefined;
+    return !!(maybe && maybe.claims && maybe.claims.isAdmin);
 }
 
 function requireUserOrSend401(req: Request, res: Response): string | null {
@@ -76,7 +74,7 @@ app.get('/api/sets/:setid', async (req: Request, res: Response) => {
 
 app.get('/api/sets/:setid/annotations', verifyFirebaseToken, async (req: Request, res: Response) => {
     // TODO: implement pagination, filtering, etc.
-    // TODO: only show visible annotations unless admin
+    // TODO: only show visible annotations
     const { setid } = req.params;
     const userId = requireUserOrSend401(req, res);
     if (!userId) return;
@@ -115,11 +113,11 @@ app.post('/api/annotations', verifyFirebaseToken, async (req: Request, res: Resp
     // If client provided a userId that doesn't match the authenticated user
     // then only allow it when the authenticated user is an admin.
     const clientUserId = ann.userId || null;
-    if (clientUserId && clientUserId !== userId && !isAdminUser(userId)) {
+    if (clientUserId && clientUserId !== userId && !isAdminUser(req)) {
         return res.status(403).json({ error: 'forbidden' });
     }
     // If not admin, force ownership to the authenticated user.
-    if (!isAdminUser(userId)) ann.userId = userId;
+    if (!isAdminUser(req)) ann.userId = userId;
     try {
         const result = await saveAnnotation(ann as any);
         return res.status(ann.id ? 200 : 201).json({ annotation: result });
@@ -135,7 +133,7 @@ app.delete('/api/annotations/:annotationId', verifyFirebaseToken, async (req: Re
         const ann = await getAnnotationById(req.params.annotationId);
         if (!ann) return res.status(404).json({ error: 'not found' });
         // Only the owner or an admin may delete
-        if (ann.userId !== userId && !isAdminUser(userId)) {
+        if (ann.userId !== userId && !isAdminUser(req)) {
             return res.status(403).json({ error: 'forbidden' });
         }
         const ok = await deleteAnnotation(req.params.annotationId);
@@ -191,6 +189,27 @@ app.post('/api/annotations/:annotationId/status', verifyFirebaseToken, async (re
 // Health endpoint for readiness checks
 app.get('/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok' });
+});
+
+// ** ADMIN ENDPOINTS **
+
+// These endpoints require the requester be authenticated and to have the
+// `isAdmin` custom claim on their token.
+
+app.get('/api/admin/sets/:setid/annotations', verifyFirebaseToken, async (req: Request, res: Response) => {
+    // TODO: implement pagination, filtering, etc.
+    // TODO: support query params like `includeInvisible` (maybe as default and
+    // use filtering when not needed?)
+    const { setid } = req.params;
+    const userId = requireUserOrSend401(req, res);
+    if (!userId) return;
+    try {
+        if (!isAdminUser(req)) return res.status(403).json({ error: 'forbidden' });
+        const anns = await getAnnotationsForSet(setid);
+        return res.json({ annotations: anns });
+    } catch (err: any) {
+        return res.status(500).json({ error: String(err) });
+    }
 });
 
 // Resolve frontend build path relative to this file so static serving works

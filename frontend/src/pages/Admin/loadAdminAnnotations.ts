@@ -1,0 +1,25 @@
+import type { Annotation, WODBSet } from '../../data';
+
+export async function loadAdminAnnotations(
+    fetchSets: () => Promise<WODBSet[]>,
+    fetchAllAnnotationsForSet: (setId: string) => Promise<Annotation[]>
+): Promise<{ sets: WODBSet[]; pending: Annotation[]; accepted: Annotation[] }> {
+    const sets = await fetchSets();
+    const pending: Annotation[] = [];
+    const accepted: Annotation[] = [];
+    for (const set of sets) {
+        try {
+            const anns = await fetchAllAnnotationsForSet(set.id);
+            for (const a of anns) {
+                if (a.status === 'pending') pending.push(a);
+                if (a.status === 'accepted') accepted.push(a);
+            }
+        } catch (err) {
+            // Ignore per-set failures and continue aggregating annotations for
+            // other sets.
+        }
+    }
+    return { sets, pending, accepted };
+}
+
+export default loadAdminAnnotations;

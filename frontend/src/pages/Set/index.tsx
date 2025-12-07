@@ -11,7 +11,6 @@ import {
     fetchVisibleAnnotationsForUserInSet,
 } from '../../api';
 import { useUser } from '../../UserContext';
-import { users as allUsers } from '../../data';
 
 export function SetPage(): preact.JSX.Element {
     const { url } = useLocation();
@@ -264,12 +263,12 @@ export function SetPage(): preact.JSX.Element {
                         <tbody>
                             {(visibleAnnotations || []).map((a) => {
                                 const obj = set.objects.find((o) => o.id === a.objectId);
-                                const u = allUsers.find((uu) => uu.id === a.userId);
+                                const uName = a.userId;
                                 return (
                                     <tr>
                                         <td class="p-2 align-top">{obj ? obj.value : a.objectId}</td>
                                         <td class="p-2 align-top break-words">{a.text}</td>
-                                        <td class="p-2 align-top">{u ? u.name : a.userId}</td>
+                                        <td class="p-2 align-top">{uName}</td>
                                         <td class="p-2 align-top">{a.status}</td>
                                     </tr>
                                 );

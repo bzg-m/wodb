@@ -59,6 +59,12 @@ export async function fetchAnnotationsForSet(setId: string): Promise<Annotation[
     return data.annotations as Annotation[];
 }
 
+export async function fetchAllAnnotationsForSet(setId: string): Promise<Annotation[]> {
+    // Admin-only endpoint returning annotations from all users for the set.
+    const data = await req(`/api/admin/sets/${encodeURIComponent(setId)}/annotations`);
+    return data.annotations as Annotation[];
+}
+
 export async function updateAnnotationVisibility(annotationId: string, visibility: AnnotationVisibility) {
     const body = JSON.stringify({ visibility });
     const data = await req(`/api/annotations/${encodeURIComponent(annotationId)}/visibility`, { method: 'POST', body });
@@ -79,6 +85,7 @@ export default {
     removeAnnotation,
     sendRequestReview,
     fetchVisibleAnnotationsForUserInSet,
+    fetchAllAnnotationsForSet,
     updateAnnotationVisibility,
     updateAnnotationStatus,
 };

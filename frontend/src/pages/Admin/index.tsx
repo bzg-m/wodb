@@ -3,10 +3,11 @@ import { useEffect, useState } from 'preact/hooks';
 import type { Annotation, WODBSet } from '../../data';
 import {
     fetchSets,
-    fetchAnnotationsForSet,
+    fetchAllAnnotationsForSet,
     updateAnnotationStatus,
     updateAnnotationVisibility,
 } from '../../api';
+import loadAdminAnnotations from './loadAdminAnnotations';
 import { useUser } from '../../UserContext';
 
 export function AdminPage(): preact.JSX.Element {
@@ -21,27 +22,15 @@ export function AdminPage(): preact.JSX.Element {
     useEffect(() => {
         let mounted = true;
         async function loadPending() {
+            // Only load when we have an authenticated admin user to avoid
+            // unauthenticated requests (which return 401) while the app is
+            // still initializing auth state.
+            if (!user || !user.isAdmin) return;
             setLoading(true);
             try {
-                const s = await fetchSets();
+                const { sets: s, pending: allPending, accepted: allAccepted } = await loadAdminAnnotations(fetchSets, fetchAllAnnotationsForSet);
                 if (!mounted) return;
                 setSets(s);
-
-                const allPending: Annotation[] = [];
-                const allAccepted: Annotation[] = [];
-                for (const set of s) {
-                    try {
-                        const anns = await fetchAnnotationsForSet(set.id);
-                        if (!mounted) return;
-                        for (const a of anns) {
-                            if (a.status === 'pending') allPending.push(a);
-                            if (a.status === 'accepted') allAccepted.push(a);
-                        }
-                    } catch (err) {
-                        // ignore errors per-set and continue
-                    }
-                }
-                if (!mounted) return;
                 setPending(allPending);
                 setAccepted(allAccepted);
             } catch (err) {
@@ -59,7 +48,7 @@ export function AdminPage(): preact.JSX.Element {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [user]);
 
     if (!user) {
         return (

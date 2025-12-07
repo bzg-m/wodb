@@ -26,11 +26,7 @@ export interface Annotation {
     visibility: AnnotationVisibility;
 }
 
-export const users: { id: string; name: string; isAdmin: boolean }[] = [
-    { id: 'u1', name: 'Alice', isAdmin: false },
-    { id: 'u2', name: 'Bob', isAdmin: false },
-    { id: 'admin', name: 'Admin', isAdmin: true },
-];
+// Local hardcoded users removed. Use the Auth provider to get user info.
 
 export const wodbSets: WODBSet[] = [
     {

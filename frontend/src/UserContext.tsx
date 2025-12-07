@@ -46,7 +46,18 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
             }
             try {
                 await getIdToken(); // warm token, ignore value here
-                setUser({ uid: u.uid, name: u.displayName || null, email: u.email || null, isAdmin: false });
+                // Try to read token claims to determine admin status. Use
+                // `getIdTokenResult` on the Firebase user if available. We use
+                // promise `.catch()` here so failures are swallowed without a
+                // nested try/catch block.
+                let isAdmin = false;
+                if (typeof u.getIdTokenResult === 'function') {
+                    isAdmin = await u
+                        .getIdTokenResult(true)
+                        .then((ir: any) => !!(ir && ir.claims && ir.claims.isAdmin))
+                        .catch(() => false);
+                }
+                setUser({ uid: u.uid, name: u.displayName || null, email: u.email || null, isAdmin });
             } catch (err) {
                 setUser(null);
             } finally {

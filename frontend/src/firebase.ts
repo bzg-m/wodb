@@ -48,6 +48,22 @@ if (hasFirebaseConfig) {
             initializeApp(config);
             const auth = getAuth();
 
+            // Connect to the Firebase Auth emulator in development if requested.
+            // Set VITE_FIREBASE_AUTH_EMULATOR_HOST to host:port (e.g. "localhost:9099").
+            const emulatorHost = (import.meta as any).env.VITE_FIREBASE_AUTH_EMULATOR_HOST;
+            if (emulatorHost) {
+                try {
+                    const { connectAuthEmulator } = firebaseAuth as any;
+                    const hostWithProto = emulatorHost.startsWith('http') ? emulatorHost : `http://${emulatorHost}`;
+                    connectAuthEmulator(auth, hostWithProto);
+                    // eslint-disable-next-line no-console
+                    console.log('Connected Firebase client to Auth emulator at', hostWithProto);
+                } catch (err) {
+                    // eslint-disable-next-line no-console
+                    console.warn('Failed to connect to Firebase Auth emulator:', err && err.message ? err.message : err);
+                }
+            }
+
             const realClient: FirebaseClient = {
                 getIdToken: async () => {
                     const user = auth.currentUser;

@@ -12,10 +12,16 @@ This repository contains an early demo MVP. More documentation, deployment notes
 - `npm run build` — build frontend production assets (`frontend` package).
 - `npm run preview` — preview the built frontend locally.
 
+Additional dev commands
+- Start Firebase Auth emulator (reads root `.env`): `npm run emulator:start`.
+- Backend development (loads root `.env` automatically): `npm --prefix backend run dev`.
+- Production backend start (does not load root `.env`): `npm --prefix backend run start` (set production envs explicitly).
+
 If you're doing feature work that touches both frontend and backend, use `npm run dev:full`. For quick UI changes you can run the frontend-only command, and for backend-only work (API changes, DB migrations, seeding) use the backend command shown above.
 
 Important notes about `dev:full` and serving the frontend
 - The `dev:full` script now waits for the backend readiness endpoint before starting the frontend dev server. It waits on `http://localhost:4000/health` so the frontend's dev proxy has a healthy backend target.
+- For local emulator development the repository centralizes emulator configuration in the root `.env` (e.g. `FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` and `FIREBASE_PROJECT_ID=demo-project`). The frontend Vite config maps these into `import.meta.env.VITE_FIREBASE_*` so the client connects to the emulator in development.
 - By default the backend will NOT serve `frontend/dist` while developing (to avoid accidentally serving stale built files). Static serving is enabled only when `NODE_ENV=production` or when you set `SERVE_STATIC=1`.
 - If a `frontend/dist` build exists from a previous run, `dev:full` will not serve it unless you explicitly enable static serving. This prevents the backend from serving older built assets instead of the live Vite dev server.
 
