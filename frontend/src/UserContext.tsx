@@ -4,6 +4,7 @@ import type { ComponentChildren } from 'preact';
 import {
     getIdToken,
     isFirebasePresent,
+    signInWithGoogle,
     sendSignInLink,
     isSignInLink,
     completeSignInWithEmailLink,
@@ -17,6 +18,7 @@ interface UserContextValue {
     user: User;
     loading: boolean;
     loginWithEmailLink(email: string): Promise<void>;
+    loginWithGoogle(): Promise<boolean>;
     logout(): Promise<void>;
 }
 
@@ -118,6 +120,18 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
         localStorage.setItem('wodb:emailForSignIn', email);
     }
 
+    async function loginWithGoogle() {
+        // Show a transient loading state while the popup/redirect is active.
+        setLoading(true);
+        try {
+            const ok = await signInWithGoogle();
+            return ok;
+        } finally {
+            // Actual sign-in will be reflected via the auth state listener.
+            setLoading(false);
+        }
+    }
+
     async function logout() {
         await firebaseSignOut();
         setUser(null);
@@ -125,7 +139,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
         setLoading(false);
     }
 
-    const value: UserContextValue = { user, loading, loginWithEmailLink, logout };
+    const value: UserContextValue = { user, loading, loginWithEmailLink, loginWithGoogle, logout };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

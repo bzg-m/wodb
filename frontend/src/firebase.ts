@@ -3,26 +3,44 @@
 // and exposes a stable client surface. When Firebase is not configured
 // a noop client is returned so callers can remain simple.
 
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
+import {
+    connectAuthEmulator,
+    getAuth,
+    GoogleAuthProvider,
+    isSignInWithEmailLink,
+    onAuthStateChanged,
+    onIdTokenChanged,
+    sendSignInLinkToEmail,
+    signInWithEmailLink,
+    signInWithPopup,
+    signOut,
+    type User,
+} from 'firebase/auth';
+
 type NullableString = string | null;
 
 interface FirebaseClient {
     getIdToken(): Promise<NullableString>;
     isConfigured(): boolean;
     sendSignInLink(email: string): Promise<void>;
-    isSignInLink(url: string): Promise<boolean>;
+    isSignInLink(url: string): boolean;
     completeSignInWithEmailLink(email: string, url: string): Promise<boolean>;
     signOut(): Promise<void>;
     onAuthStateChanged(cb: (user: any) => void): () => void;
+    // Sign in with Google (federated) — returns true on success.
+    signInWithGoogle(): Promise<boolean>;
 }
 
 const noopClient: FirebaseClient = {
     getIdToken: async () => null,
     isConfigured: () => false,
     sendSignInLink: async () => undefined,
-    isSignInLink: async () => false,
+    isSignInLink: () => false,
     completeSignInWithEmailLink: async () => false,
     signOut: async () => undefined,
     onAuthStateChanged: () => () => { },
+    signInWithGoogle: async () => false,
 };
 
 let client: FirebaseClient = noopClient;
@@ -34,16 +52,11 @@ let initPromise: Promise<void> | null = null;
 if (hasFirebaseConfig) {
     initPromise = (async () => {
         try {
-            const firebaseApp = await import('firebase/app');
-            const firebaseAuth = await import('firebase/auth');
-            const { initializeApp } = firebaseApp;
-            const { getAuth, onIdTokenChanged, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, signOut, onAuthStateChanged } = firebaseAuth as any;
-
-            const config = {
+            const config: FirebaseOptions = {
                 apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
                 authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
                 projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
-            } as any;
+            };
 
             initializeApp(config);
             const auth = getAuth();
@@ -53,14 +66,10 @@ if (hasFirebaseConfig) {
             const emulatorHost = (import.meta as any).env.VITE_FIREBASE_AUTH_EMULATOR_HOST;
             if (emulatorHost) {
                 try {
-                    const { connectAuthEmulator } = firebaseAuth as any;
                     const hostWithProto = emulatorHost.startsWith('http') ? emulatorHost : `http://${emulatorHost}`;
                     connectAuthEmulator(auth, hostWithProto);
-                    // eslint-disable-next-line no-console
-                    console.log('Connected Firebase client to Auth emulator at', hostWithProto);
                 } catch (err) {
-                    // eslint-disable-next-line no-console
-                    console.warn('Failed to connect to Firebase Auth emulator:', err && err.message ? err.message : err);
+                    // ignore emulator connection failures in client init
                 }
             }
 
@@ -87,15 +96,29 @@ if (hasFirebaseConfig) {
                     try {
                         await signInWithEmailLink(auth, email, url);
                         return true;
-                    } catch (err) {
+                    } catch (err: unknown) {
                         return false;
                     }
                 },
                 signOut: async () => {
                     await signOut(auth);
                 },
-                onAuthStateChanged: (cb: (user: any) => void) => {
-                    const unsub = onAuthStateChanged(getAuth(), cb as any);
+                signInWithGoogle: async () => {
+                    try {
+                        const provider = new GoogleAuthProvider();
+                        if (typeof signInWithPopup === 'function') {
+                            await signInWithPopup(auth, provider);
+                            return true;
+                        }
+                        throw new Error('No sign-in method available');
+                    } catch (err: unknown) {
+                        // Don't expose internal errors to callers; just
+                        // indicate failure.
+                        return false;
+                    }
+                },
+                onAuthStateChanged: (cb: (user: User | null) => void) => {
+                    const unsub = onAuthStateChanged(auth, cb as any);
                     return unsub as any;
                 },
             };
@@ -131,6 +154,16 @@ export async function getIdToken(): Promise<NullableString> {
     return client.getIdToken();
 }
 
+// Federated Google sign-in helper
+export async function signInWithGoogle(): Promise<boolean> {
+    await awaitInitIfNeeded();
+    try {
+        return await client.signInWithGoogle();
+    } catch (err) {
+        return false;
+    }
+}
+
 export function isFirebaseConfigured(): boolean {
     return hasFirebaseConfig && initialized;
 }
@@ -141,7 +174,7 @@ export function isFirebasePresent(): boolean {
     return hasFirebaseConfig;
 }
 
-export default { getIdToken, isFirebaseConfigured };
+export default { getIdToken, isFirebaseConfigured, signInWithGoogle };
 
 // Email link helpers
 export async function sendSignInLink(email: string): Promise<void> {

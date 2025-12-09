@@ -22,6 +22,7 @@ If you're doing feature work that touches both frontend and backend, use `npm ru
 Important notes about `dev:full` and serving the frontend
 - The `dev:full` script now waits for the backend readiness endpoint before starting the frontend dev server. It waits on `http://localhost:4000/health` so the frontend's dev proxy has a healthy backend target.
 - For local emulator development the repository centralizes emulator configuration in the root `.env` (e.g. `FIREBASE_AUTH_EMULATOR_HOST=localhost:9099` and `FIREBASE_PROJECT_ID=demo-project`). The frontend Vite config maps these into `import.meta.env.VITE_FIREBASE_*` so the client connects to the emulator in development.
+ - Authentication uses popup-based Google sign-in (no redirect flow). The popup flow works with both the Auth emulator and production Firebase projects, so there's no redirect setup required for local testing.
 - By default the backend will NOT serve `frontend/dist` while developing (to avoid accidentally serving stale built files). Static serving is enabled only when `NODE_ENV=production` or when you set `SERVE_STATIC=1`.
 - If a `frontend/dist` build exists from a previous run, `dev:full` will not serve it unless you explicitly enable static serving. This prevents the backend from serving older built assets instead of the live Vite dev server.
 

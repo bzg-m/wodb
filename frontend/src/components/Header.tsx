@@ -4,10 +4,11 @@ import { useUser } from '../UserContext';
 
 export function Header() {
     const { url } = useLocation();
-    const { user, loading, loginWithEmailLink, logout } = useUser();
+    const { user, loading, loginWithEmailLink, loginWithGoogle, logout } = useUser();
     const [email, setEmail] = useState('');
     const [sentMessage, setSentMessage] = useState<string | null>(null);
     const [sending, setSending] = useState(false);
+    const [googleSigning, setGoogleSigning] = useState(false);
 
     async function handleLogin(e: Event) {
         e.preventDefault();
@@ -22,6 +23,15 @@ export function Header() {
         } finally {
             setSending(false);
             setTimeout(() => setSentMessage(null), 8000);
+        }
+    }
+
+    async function handleGoogleSignIn() {
+        try {
+            setGoogleSigning(true);
+            await loginWithGoogle();
+        } finally {
+            setGoogleSigning(false);
         }
     }
 
@@ -43,6 +53,7 @@ export function Header() {
                     <form onSubmit={handleLogin} class="login-form">
                         <input type="email" placeholder="you@example.com" value={email} onInput={(e: Event) => setEmail((e.target as HTMLInputElement).value)} />
                         <button type="submit" disabled={sending}>{sending ? 'Sending…' : 'Sign in'}</button>
+                        <button type="button" class="ml-2" onClick={() => handleGoogleSignIn()} disabled={googleSigning}>{googleSigning ? 'Signing in…' : 'Sign in with Google'}</button>
                         {sentMessage && <div class="text-sm text-green-600 mt-1">{sentMessage}</div>}
                     </form>
                 )}
