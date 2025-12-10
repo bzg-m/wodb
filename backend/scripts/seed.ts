@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+import type { Annotation,WODBSet } from '../src/data.js';
+import { annotations as sampleAnnotations,wodbSets } from '../src/data.js';
 import { connectDB, disconnectDB } from '../src/db.js';
-import WODBSetModel from '../src/models/wodbSet.js';
 import AnnotationModel from '../src/models/annotation.js';
-import type { WODBSet, Annotation } from '../src/data.js';
-import { wodbSets, annotations as sampleAnnotations } from '../src/data.js';
+import WODBSetModel from '../src/models/wodbSet.js';
 
 async function seed() {
     await connectDB();

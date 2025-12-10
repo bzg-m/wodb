@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { annotations } from '../src/data.js';
 
 // Mock the AnnotationModel used by dataStore so tests operate on the in-memory
@@ -6,10 +7,16 @@ import { annotations } from '../src/data.js';
 vi.mock('../src/models/annotation.js', () => {
     return {
         default: {
-            find: (filter: any) => ({ exec: async () => annotations.filter((a: any) => a.setId === filter.setId).map((a: any) => ({ toJSON: () => a })) }),
-            findOne: (filter: any) => ({
+            find: (filter: Partial<Record<string, unknown>>) => ({
+                exec: async () => annotations.filter((a) => a.setId === (filter.setId as string)).map((a) => ({ toJSON: () => a }))
+            }),
+            findOne: (filter: Partial<Record<string, unknown>>) => ({
                 exec: async () => {
-                    const found = annotations.find((a: any) => Object.keys(filter).every((k) => (filter as any)[k] === (a as any)[k]));
+                    const found = annotations.find((a) => {
+                        const f = filter as Record<string, unknown>;
+                        const r = a as unknown as Record<string, unknown>;
+                        return Object.keys(f).every((k) => f[k] === r[k]);
+                    });
                     return found ? { toJSON: () => found } : null;
                 }
             }),

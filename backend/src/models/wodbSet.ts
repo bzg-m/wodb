@@ -1,4 +1,5 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Document, Model, Schema } from 'mongoose';
+
 import type { WODBObject as WODBObjectType } from '../data.js';
 
 export type IWODBObject = WODBObjectType;
@@ -32,10 +33,11 @@ const WODBSetSchema = new Schema(
 );
 
 WODBSetSchema.set('toJSON', {
-    transform(_doc: unknown, ret: any) {
-        ret.id = ret._id;
-        delete ret._id;
-        delete ret.__v;
+    transform(_doc: unknown, ret: Record<string, unknown>) {
+        const r = ret as Record<string, unknown> & { _id?: unknown; id?: unknown; __v?: unknown };
+        r.id = r._id;
+        delete r._id;
+        delete r.__v;
     },
 });
 

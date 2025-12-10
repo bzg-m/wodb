@@ -1,5 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { NextFunction, Response } from 'express';
 import request from 'supertest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { AuthenticatedRequest } from '../src/middleware/auth.js';
 
 describe('users endpoint', () => {
     beforeEach(() => {
@@ -9,14 +12,14 @@ describe('users endpoint', () => {
     it('resolves known users and returns null for notFound entries, and caches results', async () => {
         // Mock auth middleware to attach a user
         vi.doMock('../src/middleware/auth.js', () => ({
-            verifyFirebaseToken: (req: any, _res: any, next: any) => {
+            verifyFirebaseToken: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
                 req.user = { uid: 'caller-1', claims: { isAdmin: false } };
                 return next();
             },
         }));
 
         // Spyable getUsers implementation
-        const getUsersMock = vi.fn(async (idents: any[]) => {
+        const getUsersMock = vi.fn(async (idents: unknown[]) => {
             // Simulate returning one found user (u1) and one notFound (u2)
             return {
                 users: [{ uid: 'u1', displayName: 'Alice' }],

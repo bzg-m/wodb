@@ -1,5 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { NextFunction, Response } from 'express';
 import request from 'supertest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { AuthenticatedRequest } from '../src/middleware/auth.js';
 
 describe('annotations endpoints', () => {
     beforeEach(() => {
@@ -22,7 +25,7 @@ describe('annotations endpoints', () => {
 
         // Mock auth middleware to attach a non-admin user
         vi.doMock('../src/middleware/auth.js', () => ({
-            verifyFirebaseToken: (req: any, _res: any, next: any) => {
+            verifyFirebaseToken: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
                 req.user = { uid: 'user-123', claims: { isAdmin: false } };
                 return next();
             },
@@ -46,13 +49,13 @@ describe('annotations endpoints', () => {
 
         // First exercise that a non-admin gets forbidden
         vi.doMock('../src/middleware/auth.js', () => ({
-            verifyFirebaseToken: (req: any, _res: any, next: any) => {
+            verifyFirebaseToken: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
                 req.user = { uid: 'user-123', claims: { isAdmin: false } };
                 return next();
             },
         }));
         let mod = await import('../src/server.js');
-        let r1 = await request(mod.app).get('/api/admin/sets/set-xyz/annotations');
+        const r1 = await request(mod.app).get('/api/admin/sets/set-xyz/annotations');
         expect(r1.status).toBe(403);
 
         // Now mock as admin and verify all annotations are returned
@@ -64,7 +67,7 @@ describe('annotations endpoints', () => {
             ],
         }));
         vi.doMock('../src/middleware/auth.js', () => ({
-            verifyFirebaseToken: (req: any, _res: any, next: any) => {
+            verifyFirebaseToken: (req: AuthenticatedRequest, _res: Response, next: NextFunction) => {
                 req.user = { uid: 'admin-1', claims: { isAdmin: true } };
                 return next();
             },

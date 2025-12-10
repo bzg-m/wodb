@@ -1,11 +1,12 @@
-import type { WODBSet, Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
-import WODBSetModel from './models/wodbSet.js';
-import AnnotationModel from './models/annotation.js';
 import mongoose from 'mongoose';
+
+import type { Annotation, AnnotationStatus, AnnotationVisibility, WODBSet } from './data.js';
+import AnnotationModel from './models/annotation.js';
+import WODBSetModel from './models/wodbSet.js';
 
 export async function getSets(): Promise<WODBSet[]> {
     const docs = await WODBSetModel.find().exec();
-    return docs.map((d: any) => d.toJSON() as WODBSet);
+    return docs.map((d) => d.toJSON() as WODBSet);
 }
 
 export async function getSetById(setId: string): Promise<WODBSet | undefined> {
@@ -15,12 +16,12 @@ export async function getSetById(setId: string): Promise<WODBSet | undefined> {
 
 export async function getAnnotationsForSet(setId: string): Promise<Annotation[]> {
     const docs = await AnnotationModel.find({ setId }).exec();
-    return docs.map((d: any) => d.toJSON() as Annotation);
+    return docs.map((d) => d.toJSON() as Annotation);
 }
 
 export async function getUserAnnotationsForSet(userId: string, setId: string): Promise<Annotation[]> {
     const docs = await AnnotationModel.find({ setId, userId }).exec();
-    return docs.map((d: any) => d.toJSON() as Annotation);
+    return docs.map((d) => d.toJSON() as Annotation);
 }
 
 export async function getUserAnnotationForObject(userId: string, setId: string, objectId: string): Promise<Annotation | undefined> {
@@ -32,8 +33,7 @@ export async function saveAnnotation(a: Omit<Annotation, 'id'> & { id?: string }
     // If caller provided an id that looks like an ObjectId, treat as update.
     if (a.id && mongoose.isValidObjectId(a.id)) {
         const id = a.id;
-        const values = { ...a } as any;
-        delete values.id;
+        const { id: _id, ...values } = a;
         const updated = await AnnotationModel.findByIdAndUpdate(id, values, { new: true }).exec();
         if (updated) return (updated.toJSON() as Annotation);
         // if not found, create new (without preserving caller id)
@@ -64,7 +64,7 @@ export async function getAnnotationById(annotationId: string): Promise<Annotatio
 export async function requestReviewForUserInSet(userId: string, setId: string): Promise<Annotation[]> {
     await AnnotationModel.updateMany({ userId, setId, status: 'draft' }, { $set: { status: 'pending' } }).exec();
     const changed = await AnnotationModel.find({ userId, setId, status: 'pending' }).exec();
-    return changed.map((d: any) => d.toJSON() as Annotation);
+    return changed.map((d) => d.toJSON() as Annotation);
 }
 
 export async function setAnnotationStatus(annotationId: string, status: AnnotationStatus): Promise<Annotation | undefined> {
@@ -81,7 +81,7 @@ export async function setAnnotationVisibility(annotationId: string, visibility: 
 
 export async function getVisibleAnnotationsForUserInSet(userId: string, setId: string): Promise<Annotation[]> {
     const allDocs = await AnnotationModel.find({ setId }).exec();
-    const all = allDocs.map((d: any) => d.toJSON() as Annotation);
+    const all = allDocs.map((d) => d.toJSON() as Annotation);
     const userHasAccepted = all.some((a) => a.userId === userId && a.status === 'accepted');
     return all.filter((a) => {
         if (a.userId === userId) return true;

@@ -13,7 +13,7 @@ function initAdmin() {
     // This avoids errors when tests or the runtime import this module
     // multiple times with different credentials.
     // `admin.apps` is an array of initialized apps.
-    if ((admin as any).apps && (admin as any).apps.length > 0) {
+    if (admin.apps && admin.apps.length > 0) {
         return admin;
     }
     const base64 = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64;
@@ -21,11 +21,10 @@ function initAdmin() {
         try {
             const json = JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
             admin.initializeApp({ credential: admin.credential.cert(json) });
-            // eslint-disable-next-line no-console
+
             console.log('Initialized Firebase Admin from FIREBASE_SERVICE_ACCOUNT_BASE64');
             return admin;
-        } catch (err) {
-            // eslint-disable-next-line no-console
+        } catch (err: unknown) {
             console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT_BASE64', err);
             throw err;
         }
@@ -43,19 +42,18 @@ function initAdmin() {
         if (emulatorHost && !isProd) {
             const projectId = process.env.FIREBASE_PROJECT_ID || 'demo-project';
             admin.initializeApp({ projectId });
-            // eslint-disable-next-line no-console
+
             console.log(`Initialized Firebase Admin against Auth emulator at ${emulatorHost}`);
         } else {
             if (emulatorHost && isProd) {
-                // eslint-disable-next-line no-console
+
                 console.warn('FIREBASE_AUTH_EMULATOR_HOST is set but NODE_ENV=production — ignoring emulator and using application default credentials.');
             }
             admin.initializeApp({ credential: admin.credential.applicationDefault() });
-            // eslint-disable-next-line no-console
+
             console.log('Initialized Firebase Admin using applicationDefault()');
         }
-    } catch (err) {
-        // eslint-disable-next-line no-console
+    } catch (err: unknown) {
         console.error('Failed to initialize Firebase Admin with applicationDefault()', err);
         // allow caller to handle; rethrow
         throw err;

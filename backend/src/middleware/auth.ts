@@ -1,4 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
+
 import admin from '../firebaseAdmin.js';
 
 export interface AuthenticatedRequest extends Request {
@@ -6,7 +7,7 @@ export interface AuthenticatedRequest extends Request {
     uid: string;
     email?: string | null;
     name?: string | null;
-    claims?: Record<string, any>;
+    claims?: Record<string, unknown>;
   };
 }
 
@@ -25,8 +26,9 @@ export async function verifyFirebaseToken(req: Request, res: Response, next: Nex
       claims: decoded,
     };
     return next();
-  } catch (err: any) {
-    return res.status(401).json({ error: 'invalid token', details: err?.message });
+  } catch (err: unknown) {
+    const details = err instanceof Error ? err.message : String(err);
+    return res.status(401).json({ error: 'invalid token', details });
   }
 }
 

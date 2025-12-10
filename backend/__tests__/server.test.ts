@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock the data store before importing the server so tests are true unit tests.
 vi.mock('../src/dataStore.js', () => {
@@ -13,8 +13,8 @@ vi.mock('../src/dataStore.js', () => {
     };
 });
 
-import { app } from '../src/server.js';
 import type { WODBObject, WODBSet } from '../src/data.js';
+import { app } from '../src/server.js';
 
 describe('server routes', () => {
     it('GET /api/sets returns sets', async () => {

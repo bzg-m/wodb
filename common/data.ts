@@ -52,4 +52,4 @@ export const wodbSets: WODBSet[] = [
     },
 ];
 
-export let annotations: Annotation[] = [];
+export const annotations: Annotation[] = [];
