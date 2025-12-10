@@ -1,24 +1,32 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect,it } from 'vitest';
+
 import { createGetIdTokenMock } from './utils/mockFirebase';
 
 // This test validates our frontend test mock shape so other tests can rely
 // on the exported functions when they `vi.mock('../src/firebase', ...)`.
 describe('mockFirebase shape', () => {
     it('provides basic API functions', async () => {
-        const api = createGetIdTokenMock('t') as any;
-        expect(typeof api.getIdToken).toBe('function');
-        expect(typeof api.isFirebaseConfigured).toBe('function');
-        expect(typeof api.signInWithGoogle).toBe('function');
-        expect(typeof api.sendSignInLink).toBe('function');
-        expect(typeof api.isSignInLink).toBe('function');
+        const api = createGetIdTokenMock('t');
+        const a = api as {
+            getIdToken: () => Promise<string | null>;
+            isFirebaseConfigured: () => boolean;
+            signInWithGoogle: () => Promise<boolean>;
+            sendSignInLink: (email: string) => Promise<void>;
+            isSignInLink: (url: string) => Promise<boolean> | boolean;
+        };
+        expect(typeof a.getIdToken).toBe('function');
+        expect(typeof a.isFirebaseConfigured).toBe('function');
+        expect(typeof a.signInWithGoogle).toBe('function');
+        expect(typeof a.sendSignInLink).toBe('function');
+        expect(typeof a.isSignInLink).toBe('function');
 
-        const token = await api.getIdToken();
+        const token = await a.getIdToken();
         expect(token).toBe('t');
 
-        const google = await api.signInWithGoogle();
+        const google = await a.signInWithGoogle();
         expect(google).toBe(true);
 
-        const signinLink = await api.isSignInLink('http://example');
+        const signinLink = await a.isSignInLink('http://example');
         expect(signinLink).toBe(false);
     });
 });

@@ -1,9 +1,10 @@
+import './style.css';
+
 import { render } from 'preact';
-import { lazy, LocationProvider, Router, Route } from 'preact-iso';
+import { lazy, LocationProvider, Route, Router } from 'preact-iso';
 
 import { Header } from './components/Header';
 import { Home } from './pages/Home/index';
-import './style.css';
 import { UserProvider } from './UserContext';
 
 const SetPage = lazy(() => import('./pages/Set/index'));

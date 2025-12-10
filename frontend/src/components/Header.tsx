@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
+
 import { useUser } from '../UserContext';
 
 export function Header() {
@@ -18,6 +19,7 @@ export function Header() {
             await loginWithEmailLink(email);
             setSentMessage('Check your email — sign-in link sent.');
             setEmail('');
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             setSentMessage('Failed to send sign-in link.');
         } finally {

@@ -1,17 +1,18 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/preact';
-import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/preact';
+import type { ComponentChildren } from 'preact';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock the UserContext with a provider we can control in-test. The provider
 // exposes a logout button we can click to simulate sign-out.
 vi.mock('../src/UserContext', async () => {
     const preact = await import('preact');
     const hooks = await import('preact/hooks');
-    const { createContext, h } = preact;
+    const { createContext } = preact;
     const { useState, useContext } = hooks;
 
-    const UserContext = createContext(undefined as any);
+    const UserContext = createContext(undefined);
 
-    function UserProvider({ children }: any) {
+    function UserProvider({ children }: { children: ComponentChildren }) {
         const [user, setUser] = useState({ uid: 'u1', email: 'user@example.com' });
         const logout = async () => setUser(null);
         const value = { user, loading: false, loginWithEmailLink: async () => { }, logout };
@@ -29,12 +30,13 @@ vi.mock('../src/UserContext', async () => {
         return ctx;
     }
 
-    return { UserProvider, useUser } as any;
+    return { UserProvider, useUser };
 });
 
 // Mock API functions used by SetPage so we can assert behavior deterministically.
 vi.mock('../src/api', () => ({
-    fetchSetById: async (_id: string) => ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    fetchSetById: async (id: string) => ({
         id: 'set-1',
         title: 'Test Set',
         description: 'desc',
@@ -43,10 +45,12 @@ vi.mock('../src/api', () => ({
             { id: 'o2', type: 'text', value: 'Obj 2' },
         ],
     }),
-    fetchUserAnnotationsForSet: async (_setId: string) => [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    fetchUserAnnotationsForSet: async (setId: string) => [
         { id: 'a1', objectId: 'o1', text: 'one', userId: 'u1', status: 'accepted', setId: 'set-1', visibility: 'private' },
     ],
-    fetchVisibleAnnotationsForUserInSet: async (_setId: string) => [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    fetchVisibleAnnotationsForUserInSet: async (setId: string) => [
         { id: 'v1', objectId: 'o1', text: 'public one', userId: 'other', status: 'accepted', setId: 'set-1', visibility: 'public' },
     ],
     createOrUpdateAnnotation: async () => ({}),
@@ -54,10 +58,12 @@ vi.mock('../src/api', () => ({
     sendRequestReview: async () => ({}),
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
-import { UserProvider } from '../src/UserContext';
-import SetPage from '../src/pages/Set/index';
 import { LocationProvider } from 'preact-iso';
+
+import SetPage from '../src/pages/Set/index';
+import { UserProvider } from '../src/UserContext';
 
 describe('SetPage logout behavior', () => {
     it('clears user annotations and exits reflection view on logout', async () => {

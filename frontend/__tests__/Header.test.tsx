@@ -1,8 +1,9 @@
 import { render } from '@testing-library/preact';
-import { describe, it, expect } from 'vitest';
+import { LocationProvider } from 'preact-iso';
+import { describe, expect,it } from 'vitest';
+
 import { Header } from '../src/components/Header';
 import { UserProvider } from '../src/UserContext';
-import { LocationProvider } from 'preact-iso';
 
 describe('Header', () => {
     it('renders', () => {

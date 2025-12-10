@@ -1,16 +1,18 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
-import type { Annotation, WODBSet } from '../../data';
+import { StateUpdater, useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
+
 import {
+    createOrUpdateAnnotation,
     fetchSetById,
     fetchUserAnnotationsForSet,
-    createOrUpdateAnnotation,
+    fetchUserNames,
+    fetchVisibleAnnotationsForUserInSet,
     removeAnnotation,
     sendRequestReview,
-    fetchVisibleAnnotationsForUserInSet,
-    fetchUserNames,
 } from '../../api';
+import type { Annotation, WODBSet } from '../../data';
 import { useUser } from '../../UserContext';
 
 export function SetPage(): preact.JSX.Element {
@@ -38,13 +40,15 @@ export function SetPage(): preact.JSX.Element {
                 const s = await fetchSetById(id);
                 if (!mounted) return;
                 setSet(s as WODBSet | null);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 if (!mounted) return;
                 // on error treat as not found / unavailable
                 setSet(null);
             } finally {
-                if (!mounted) return;
-                setSetLoading(false);
+                if (mounted) {
+                    setSetLoading(false);
+                }
             }
         })();
         return () => {
@@ -108,7 +112,7 @@ export function SetPage(): preact.JSX.Element {
     useEffect(() => {
         let mounted = true;
         async function loadNames() {
-            const ids = Array.from(new Set((visibleAnnotations || []).map((a) => a.userId))).filter((id) => !userNames.hasOwnProperty(id));
+            const ids = Array.from(new Set((visibleAnnotations || []).map((a) => a.userId))).filter((id) => !Object.prototype.hasOwnProperty.call(userNames, id));
             if (ids.length === 0) return;
             try {
                 const res = await fetchUserNames(ids);
@@ -118,6 +122,7 @@ export function SetPage(): preact.JSX.Element {
                     next[id] = res[id] ? res[id].name ?? null : null;
                 }
                 setUserNames(next);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 // ignore failures; leave missing ids unpopulated
             }
@@ -164,7 +169,7 @@ export function SetPage(): preact.JSX.Element {
         setText('');
         // refresh user's annotations and state
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as any);
+        setUserAnnotations(anns as StateUpdater<Annotation[]>);
     }
 
     async function handleDelete(aId: string) {
@@ -172,7 +177,7 @@ export function SetPage(): preact.JSX.Element {
         await removeAnnotation(aId);
         if (!set) return;
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as any);
+        setUserAnnotations(anns as StateUpdater<Annotation[]>);
     }
 
     async function handleRequestReview() {
@@ -180,7 +185,7 @@ export function SetPage(): preact.JSX.Element {
         if (!set) return;
         await sendRequestReview(set.id);
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as any);
+        setUserAnnotations(anns as StateUpdater<Annotation[]>);
     }
 
     function renderAnnotationPanel(): preact.JSX.Element {

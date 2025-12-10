@@ -2,11 +2,15 @@ export function createGetIdTokenMock(token: string | null) {
     const getIdToken = async () => token;
     const isFirebaseConfigured = () => Boolean(token);
     const signInWithGoogle = async () => true;
-    const sendSignInLink = async (_email: string) => undefined;
-    const isSignInLink = async (_url: string) => false;
-    const completeSignInWithEmailLink = async (_email: string, _url: string) => false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const sendSignInLink = async (email: string) => undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const isSignInLink = async (url: string) => false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const completeSignInWithEmailLink = async (email: string, url: string) => false;
     const firebaseSignOut = async () => undefined;
-    const onFirebaseAuthStateChanged = (_cb: (user: any) => void) => () => { };
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const onFirebaseAuthStateChanged = (cb: (user: unknown) => void) => () => { };
 
     const api = {
         getIdToken,

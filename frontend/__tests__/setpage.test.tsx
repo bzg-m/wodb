@@ -1,8 +1,9 @@
 import { render } from '@testing-library/preact';
-import { describe, it, expect } from 'vitest';
-import { UserProvider } from '../src/UserContext';
-import SetPage from '../src/pages/Set/index';
 import { LocationProvider } from 'preact-iso';
+import { describe, expect, it } from 'vitest';
+
+import SetPage from '../src/pages/Set/index';
+import { UserProvider } from '../src/UserContext';
 
 describe('SetPage', () => {
     it('renders not found when no set', async () => {

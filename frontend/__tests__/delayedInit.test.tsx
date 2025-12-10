@@ -1,5 +1,5 @@
 import { render, waitFor } from '@testing-library/preact';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 // Mock the firebase module to simulate delayed initialization and the
 // email-link sign-in flow. The mock calls the auth-state callback
@@ -12,7 +12,7 @@ vi.mock('../src/firebase', () => {
         isSignInLink: async () => true,
         completeSignInWithEmailLink: async () => true,
         firebaseSignOut: async () => undefined,
-        onFirebaseAuthStateChanged: (cb: (u: any) => void) => {
+        onFirebaseAuthStateChanged: (cb: (u: unknown) => void) => {
             // Call back on next microtask to emulate delayed init.
             Promise.resolve().then(() =>
                 cb({
@@ -25,12 +25,14 @@ vi.mock('../src/firebase', () => {
             );
             return () => { };
         },
-    } as any;
+    };
 });
 
-import { UserProvider, useUser } from '../src/UserContext';
-import { LocationProvider } from 'preact-iso';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
+import { LocationProvider } from 'preact-iso';
+
+import { UserProvider, useUser } from '../src/UserContext';
 
 function Probe() {
     const { user, loading } = useUser();
@@ -41,9 +43,14 @@ describe('delayed init auth', () => {
     it('completes email-link sign-in after init and clears stored email', async () => {
         // Simulate landing on an email sign-in link with stored email
         const url = 'https://example.com/?link=1';
-        // Set location and stored email before rendering
-        (globalThis as any).window = globalThis.window || {};
-        window.location.href = url;
+        // Ensure `location` exists and is writable on `globalThis` for this test environment
+        const globalWithLocation = globalThis as unknown as { location?: Location };
+        const fakeLocation = { href: url } as unknown as Location;
+        if (typeof globalWithLocation.location === 'undefined') {
+            Object.defineProperty(globalThis, 'location', { value: fakeLocation, configurable: true });
+        } else {
+            (globalWithLocation.location as Location).href = url;
+        }
         localStorage.setItem('wodb:emailForSignIn', 'user@example.com');
 
         const { container } = render(

@@ -1,4 +1,4 @@
-import type { WODBSet, Annotation, AnnotationVisibility } from './data';
+import type { Annotation, AnnotationVisibility, WODBSet } from './data';
 import { getIdToken } from './firebase';
 
 // Default to same-origin so production (served by Express) works without CORS.
@@ -44,9 +44,9 @@ export async function removeAnnotation(annotationId: string): Promise<boolean> {
     return true;
 }
 
-export async function sendRequestReview(setId: string): Promise<any> {
+export async function sendRequestReview(setId: string): Promise<Annotation[]> {
     const data = await req(`/api/sets/${encodeURIComponent(setId)}/request-review`, { method: 'POST' });
-    return data;
+    return data.changed as Annotation[];
 }
 
 export async function fetchVisibleAnnotationsForUserInSet(setId: string): Promise<Annotation[]> {
@@ -78,7 +78,7 @@ export async function updateAnnotationVisibility(annotationId: string, visibilit
     return data.annotation as Annotation;
 }
 
-export async function updateAnnotationStatus(annotationId: string, status: string) {
+export async function updateAnnotationStatus(annotationId: string, status: Annotation['status']) {
     const body = JSON.stringify({ status });
     const data = await req(`/api/annotations/${encodeURIComponent(annotationId)}/status`, { method: 'POST', body });
     return data.annotation as Annotation;

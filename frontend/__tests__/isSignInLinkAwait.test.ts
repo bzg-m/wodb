@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import type { Auth, NextOrObserver, User } from 'firebase/auth';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('firebase isSignInLink awaiting init', () => {
     it('waits for dynamic auth module before returning result', async () => {
@@ -16,16 +17,20 @@ describe('firebase isSignInLink awaiting init', () => {
             await new Promise((resolve) => setTimeout(resolve, 50));
             return {
                 getAuth: () => ({}),
-                onIdTokenChanged: (auth: any, cb: any) => { },
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                onIdTokenChanged: (auth: Auth, cb: NextOrObserver<User>) => { },
                 sendSignInLinkToEmail: async () => { },
-                isSignInWithEmailLink: (_auth: any, _url: string) => true,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                isSignInWithEmailLink: (auth: Auth, url: string) => true,
                 signInWithEmailLink: async () => { },
                 signOut: async () => { },
-                onAuthStateChanged: (_auth: any, cb: any) => {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                onAuthStateChanged: (auth: Auth, cb: NextOrObserver<User>) => {
                     return () => { };
                 },
-                connectAuthEmulator: (_auth: any, _host: string) => { },
-            } as any;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                connectAuthEmulator: (auth: Auth, host: string) => { },
+            };
         });
 
         // Import the real firebase helper after the mocks are in place.

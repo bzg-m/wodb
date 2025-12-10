@@ -14,6 +14,7 @@ export async function loadAdminAnnotations(
                 if (a.status === 'pending') pending.push(a);
                 if (a.status === 'accepted') accepted.push(a);
             }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
             // Ignore per-set failures and continue aggregating annotations for
             // other sets.

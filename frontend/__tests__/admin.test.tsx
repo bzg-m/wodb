@@ -1,8 +1,9 @@
 import { render } from '@testing-library/preact';
-import { describe, it, expect } from 'vitest';
+import { LocationProvider } from 'preact-iso';
+import { describe, expect,it } from 'vitest';
+
 import AdminPage from '../src/pages/Admin/index';
 import { UserProvider } from '../src/UserContext';
-import { LocationProvider } from 'preact-iso';
 
 describe('AdminPage', () => {
     it('shows auth message when not signed in', () => {

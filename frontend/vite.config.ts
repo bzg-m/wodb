@@ -1,5 +1,5 @@
-import { defineConfig, loadEnv } from 'vite';
 import preact from '@preact/preset-vite';
+import { defineConfig, loadEnv } from 'vite';
 
 export default ({ mode }: { mode: string }) => {
   const env = loadEnv(mode, process.cwd(), '');

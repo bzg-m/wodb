@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { signInWithGoogle, isSignInLink } from '../src/firebase';
+import { describe, expect,it } from 'vitest';
+
+import { isSignInLink,signInWithGoogle } from '../src/firebase';
 
 describe('firebase API (wrapper)', () => {
     it('signInWithGoogle returns false when firebase is not configured (noop client)', async () => {

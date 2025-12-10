@@ -1,15 +1,17 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import type { Annotation, WODBSet } from '../../data';
+
 import {
-    fetchSets,
     fetchAllAnnotationsForSet,
+    fetchSets,
+    fetchUserNames,
     updateAnnotationStatus,
     updateAnnotationVisibility,
-    fetchUserNames,
 } from '../../api';
-import loadAdminAnnotations from './loadAdminAnnotations';
+import type { Annotation, AnnotationVisibility, WODBSet } from '../../data';
 import { useUser } from '../../UserContext';
+import loadAdminAnnotations from './loadAdminAnnotations';
 
 export function AdminPage(): preact.JSX.Element {
     const { user } = useUser();
@@ -38,7 +40,7 @@ export function AdminPage(): preact.JSX.Element {
                 // Resolve user names for admin lists
                 try {
                     const idsAll = Array.from(new Set([...allPending, ...allAccepted].map((a) => a.userId))).filter(Boolean);
-                    const ids = idsAll.filter((id) => !userNames.hasOwnProperty(id));
+                    const ids = idsAll.filter((id) => !Object.prototype.hasOwnProperty.call(userNames, id));
                     if (ids.length > 0) {
                         const res = await fetchUserNames(ids);
                         if (!mounted) return;
@@ -48,9 +50,11 @@ export function AdminPage(): preact.JSX.Element {
                         }
                         setUserNames(next);
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (err) {
                     // ignore
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 // network or API error — treat as empty state
                 if (!mounted) return;
@@ -58,8 +62,9 @@ export function AdminPage(): preact.JSX.Element {
                 setPending([]);
                 setAccepted([]);
             } finally {
-                if (!mounted) return;
-                setLoading(false);
+                if (mounted) {
+                    setLoading(false);
+                }
             }
         }
         loadPending();
@@ -100,8 +105,9 @@ export function AdminPage(): preact.JSX.Element {
             await updateAnnotationStatus(aId, 'rejected');
             setPending((p) => p.filter((x) => x.id !== aId));
             setAccepted((a) => a.filter((x) => x.id !== aId));
-        } catch (err: any) {
-            setErrors((e) => ({ ...e, [aId]: String(err) || 'Failed to reject annotation' }));
+        } catch (err: unknown) {
+            const details = err instanceof Error ? err.message : String(err);
+            setErrors((e) => ({ ...e, [aId]: details || 'Failed to reject annotation' }));
         } finally {
             clearBusy(aId);
         }
@@ -118,8 +124,9 @@ export function AdminPage(): preact.JSX.Element {
             } else {
                 setPending((p) => p.filter((x) => x.id !== aId));
             }
-        } catch (err: any) {
-            setErrors((e) => ({ ...e, [aId]: String(err) || 'Failed to accept annotation' }));
+        } catch (err: unknown) {
+            const details = err instanceof Error ? err.message : String(err);
+            setErrors((e) => ({ ...e, [aId]: details || 'Failed to accept annotation' }));
         } finally {
             clearBusy(aId);
         }
@@ -134,8 +141,9 @@ export function AdminPage(): preact.JSX.Element {
                 setPending((p) => p.filter((x) => x.id !== aId));
                 setAccepted((prev) => [acceptedRes as Annotation, ...prev.filter((x) => x.id !== aId)]);
             }
-        } catch (err: any) {
-            setErrors((e) => ({ ...e, [aId]: `Accept failed: ${String(err)}` }));
+        } catch (err: unknown) {
+            const details = err instanceof Error ? err.message : String(err);
+            setErrors((e) => ({ ...e, [aId]: `Accept failed: ${details}` }));
             clearBusy(aId);
             return;
         }
@@ -143,21 +151,24 @@ export function AdminPage(): preact.JSX.Element {
         try {
             await updateAnnotationVisibility(aId, 'public');
             setAccepted((prev) => prev.map((x) => (x.id === aId ? { ...x, visibility: 'public' } : x)));
-        } catch (err: any) {
-            setErrors((e) => ({ ...e, [aId]: `Make public failed: ${String(err)}` }));
+        } catch (err: unknown) {
+            const details = err instanceof Error ? err.message : String(err);
+            setErrors((e) => ({ ...e, [aId]: `Make public failed: ${details}` }));
         } finally {
             clearBusy(aId);
         }
     }
 
-    async function changeAcceptedVisibility(aId: string, v: 'group' | 'public') {
+    async function changeAcceptedVisibility(aId: string, v: AnnotationVisibility) {
+        if (v !== 'group' && v !== 'public') return;
         markBusy(aId);
         setErrors((e) => ({ ...e, [aId]: '' }));
         try {
-            await updateAnnotationVisibility(aId, v as any);
+            await updateAnnotationVisibility(aId, v);
             setAccepted((prev) => prev.map((x) => (x.id === aId ? { ...x, visibility: v } : x)));
-        } catch (err: any) {
-            setErrors((e) => ({ ...e, [aId]: String(err) || 'Failed to change visibility' }));
+        } catch (err: unknown) {
+            const details = err instanceof Error ? err.message : String(err);
+            setErrors((e) => ({ ...e, [aId]: details || 'Failed to change visibility' }));
         } finally {
             clearBusy(aId);
         }
@@ -236,7 +247,7 @@ export function AdminPage(): preact.JSX.Element {
                                         <td class="p-2 align-top break-words">{a.text}</td>
                                         <td class="p-2 align-top">{userNames[a.userId] ? `${userNames[a.userId]} (${a.userId})` : a.userId}</td>
                                         <td class="p-2 align-top">
-                                            <select class="border p-1" value={a.visibility} onChange={(e) => changeAcceptedVisibility(a.id, (e.target as HTMLSelectElement).value as any)} disabled={busyIds.includes(a.id)}>
+                                            <select class="border p-1" value={a.visibility} onChange={(e) => changeAcceptedVisibility(a.id, (e.target as HTMLSelectElement).value as AnnotationVisibility)} disabled={busyIds.includes(a.id)}>
                                                 <option value="group">group</option>
                                                 <option value="public">public</option>
                                             </select>

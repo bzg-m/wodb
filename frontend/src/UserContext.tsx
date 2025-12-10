@@ -1,21 +1,23 @@
+import type { IdTokenResult, User as FirebaseUser } from 'firebase/auth';
+import type { ComponentChildren } from 'preact';
 import { createContext } from 'preact';
 import { useContext, useEffect, useState } from 'preact/hooks';
-import type { ComponentChildren } from 'preact';
+
 import {
-    getIdToken,
-    isFirebasePresent,
-    signInWithGoogle,
-    sendSignInLink,
-    isSignInLink,
     completeSignInWithEmailLink,
     firebaseSignOut,
+    getIdToken,
+    isFirebasePresent,
+    isSignInLink,
     onFirebaseAuthStateChanged,
+    sendSignInLink,
+    signInWithGoogle,
 } from './firebase';
 
-type User = { uid: string; name?: string | null; email?: string | null; isAdmin?: boolean } | null;
+type User = { uid: string; name?: string | null; email?: string | null; isAdmin?: boolean };
 
 interface UserContextValue {
-    user: User;
+    user: User | null;
     loading: boolean;
     loginWithEmailLink(email: string): Promise<void>;
     loginWithGoogle(): Promise<boolean>;
@@ -45,7 +47,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
             return;
         }
 
-        const unsub = onFirebaseAuthStateChanged(async (u: any) => {
+        const unsub = onFirebaseAuthStateChanged(async (u: FirebaseUser) => {
             if (!u) {
                 setUser(null);
                 setLoading(false);
@@ -60,6 +62,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
                 if (typeof u.getIdToken === 'function') {
                     try {
                         await u.getIdToken(); // warm token, ignore value
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     } catch (e) {
                         // ignore token fetch failures here; downstream checks
                         // will handle missing tokens.
@@ -75,10 +78,11 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
                 if (typeof u.getIdTokenResult === 'function') {
                     isAdmin = await u
                         .getIdTokenResult(true)
-                        .then((ir: any) => !!(ir && ir.claims && ir.claims.isAdmin))
+                        .then((ir: IdTokenResult) => !!(ir && ir.claims && ir.claims.isAdmin))
                         .catch(() => false);
                 }
                 setUser({ uid: u.uid, name: u.displayName || null, email: u.email || null, isAdmin });
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 setUser(null);
             } finally {
@@ -100,6 +104,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
                         }
                     }
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (err) {
                 // ignore
             }

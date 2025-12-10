@@ -1,15 +1,17 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import type { Annotation, WODBSet } from '../../../data';
 import loadAdminAnnotations from '../loadAdminAnnotations';
 
 describe('loadAdminAnnotations', () => {
     it('aggregates pending and accepted annotations across sets', async () => {
-        const fetchSets = vi.fn(async () => [{ id: 'set-1', title: 'Set One' }]);
+        const fetchSets = vi.fn(async () => [{ id: 'set-1', title: 'Set One' } as WODBSet]);
         const fetchAllAnnotationsForSet = vi.fn(async (setId: string) => [
-            { id: 'a1', setId, objectId: 'o1', text: 'Pending annotation', userId: 'userA', status: 'pending', visibility: 'group' },
-            { id: 'a2', setId, objectId: 'o2', text: 'Accepted annotation', userId: 'userB', status: 'accepted', visibility: 'group' },
+            { id: 'a1', setId, objectId: 'o1', text: 'Pending annotation', userId: 'userA', status: 'pending', visibility: 'group' } as Annotation,
+            { id: 'a2', setId, objectId: 'o2', text: 'Accepted annotation', userId: 'userB', status: 'accepted', visibility: 'group' } as Annotation,
         ]);
 
-        const { sets, pending, accepted } = await loadAdminAnnotations(fetchSets as any, fetchAllAnnotationsForSet as any);
+        const { sets, pending, accepted } = await loadAdminAnnotations(fetchSets, fetchAllAnnotationsForSet);
 
         expect(sets).toHaveLength(1);
         expect(pending).toHaveLength(1);
