@@ -1,25 +1,28 @@
-import express, { Request, Response } from 'express';
 import cors from 'cors';
-import path from 'path';
+import express, { Request, Response } from 'express';
+import type { auth } from 'firebase-admin/lib/auth/auth-namespace.js';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
+
+import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
 import {
-    getSets,
-    getSetById,
-    getAnnotationsForSet,
-    getUserAnnotationsForSet,
-    saveAnnotation,
     deleteAnnotation,
     getAnnotationById,
+    getAnnotationsForSet,
+    getSetById,
+    getSets,
+    getUserAnnotationsForSet,
+    getVisibleAnnotationsForUserInSet,
     requestReviewForUserInSet,
+    saveAnnotation,
     setAnnotationStatus,
     setAnnotationVisibility,
-    getVisibleAnnotationsForUserInSet,
 } from './dataStore.js';
-import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
 import { connectDB } from './db.js';
-import { verifyFirebaseToken } from './middleware/auth.js';
 import admin from './firebaseAdmin.js';
+import type { AuthenticatedRequest } from './middleware/auth.js';
+import { verifyFirebaseToken } from './middleware/auth.js';
 
 // Simple in-memory cache for resolved user display names. This keeps recent
 // lookups available for a short TTL to avoid repeatedly hitting the Admin SDK
@@ -41,7 +44,7 @@ const userNameCache: Map<
 type AdminUserRecord = { uid?: string; displayName?: string | null; email?: string | null; phoneNumber?: string | null };
 type AdminGetUsersResult = { users?: AdminUserRecord[]; notFound?: AdminUserRecord[] };
 
-function uidOfIdentifier(id: AdminUserRecord | any): string | undefined {
+function uidOfIdentifier(id: AdminUserRecord): string | undefined {
     if (!id) return undefined;
     if (typeof id.uid === 'string' && id.uid) return id.uid;
     if (typeof id.email === 'string' && id.email) return id.email;
@@ -61,14 +64,14 @@ function getCurrentUser(req: Request): string | null {
     // The previous fallback to query/body was intentionally removed
     // to avoid spoofing user identity. Ensure `verifyFirebaseToken`
     // runs before handlers (it does via app.use('/api', ...)).
-    const maybeUser = (req as any).user as { uid?: string } | undefined;
+    const maybeUser = (req as AuthenticatedRequest).user as { uid?: string } | undefined;
     return maybeUser?.uid ?? null;
 }
 
 // TODO: Implement XSRF/CSRF protection for state-changing endpoints (POST/PUT/PATCH/DELETE).
 
 function isAdminUser(req: Request): boolean {
-    const maybe = (req as any).user as { claims?: Record<string, any> } | undefined;
+    const maybe = (req as AuthenticatedRequest).user as { claims?: auth.DecodedIdToken } | undefined;
     return !!(maybe && maybe.claims && maybe.claims.isAdmin);
 }
 
@@ -86,8 +89,9 @@ app.get('/api/sets', async (req: Request, res: Response) => {
     try {
         const sets = await getSets();
         res.json({ sets });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -96,8 +100,9 @@ app.get('/api/sets/:setid', async (req: Request, res: Response) => {
         const set = await getSetById(req.params.setid);
         if (!set) return res.status(404).json({ error: 'not found' });
         res.json({ set });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -112,8 +117,9 @@ app.get('/api/sets/:setid/annotations', verifyFirebaseToken, async (req: Request
         // other users' private annotations.
         const anns = await getUserAnnotationsForSet(userId, setid);
         return res.json({ annotations: anns });
-    } catch (err: any) {
-        return res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -125,8 +131,9 @@ app.get('/api/sets/:setid/visible', verifyFirebaseToken, async (req: Request, re
     try {
         const anns = await getVisibleAnnotationsForUserInSet(userId, setid);
         res.json({ annotations: anns });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -156,8 +163,8 @@ app.get('/api/users', verifyFirebaseToken, async (req: Request, res: Response) =
             const batchSize = 100;
             for (let i = 0; i < missing.length; i += batchSize) {
                 const batch = missing.slice(i, i + batchSize);
-                const identifiers = batch.map((uid) => ({ uid }));
-                const raw = (await admin.auth().getUsers(identifiers as any)) as AdminGetUsersResult;
+                const identifiers = batch.map((uid) => ({ uid } as auth.UserIdentifier));
+                const raw = (await admin.auth().getUsers(identifiers)) as AdminGetUsersResult;
                 const found = raw.users || [];
                 const notFound = raw.notFound || [];
                 for (const u of found) {
@@ -179,8 +186,9 @@ app.get('/api/users', verifyFirebaseToken, async (req: Request, res: Response) =
         }
 
         return res.json({ users });
-    } catch (err: any) {
-        return res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -202,10 +210,11 @@ app.post('/api/annotations', verifyFirebaseToken, async (req: Request, res: Resp
     // If not admin, force ownership to the authenticated user.
     if (!isAdminUser(req)) ann.userId = userId;
     try {
-        const result = await saveAnnotation(ann as any);
+        const result = await saveAnnotation(ann);
         return res.status(ann.id ? 200 : 201).json({ annotation: result });
-    } catch (err: any) {
-        return res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -222,8 +231,9 @@ app.delete('/api/annotations/:annotationId', verifyFirebaseToken, async (req: Re
         const ok = await deleteAnnotation(req.params.annotationId);
         if (!ok) return res.status(404).json({ error: 'not found' });
         return res.status(204).end();
-    } catch (err: any) {
-        return res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -234,8 +244,9 @@ app.post('/api/sets/:setid/request-review', verifyFirebaseToken, async (req: Req
     try {
         const changed = await requestReviewForUserInSet(userId, setid);
         res.json({ changed });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -246,11 +257,12 @@ app.post('/api/annotations/:annotationId/visibility', verifyFirebaseToken, async
     const userId = requireUserOrSend401(req, res);
     if (!userId) return;
     try {
-        const updated = await setAnnotationVisibility(annotationId, visibility as any);
+        const updated = await setAnnotationVisibility(annotationId, visibility);
         if (!updated) return res.status(404).json({ error: 'not found' });
         res.json({ annotation: updated });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -261,11 +273,12 @@ app.post('/api/annotations/:annotationId/status', verifyFirebaseToken, async (re
     const userId = requireUserOrSend401(req, res);
     if (!userId) return;
     try {
-        const updated = await setAnnotationStatus(annotationId, status as any);
+        const updated = await setAnnotationStatus(annotationId, status);
         if (!updated) return res.status(404).json({ error: 'not found' });
         res.json({ annotation: updated });
-    } catch (err: any) {
-        res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -290,8 +303,9 @@ app.get('/api/admin/sets/:setid/annotations', verifyFirebaseToken, async (req: R
         if (!isAdminUser(req)) return res.status(403).json({ error: 'forbidden' });
         const anns = await getAnnotationsForSet(setid);
         return res.json({ annotations: anns });
-    } catch (err: any) {
-        return res.status(500).json({ error: String(err) });
+    } catch (err: unknown) {
+        const details = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: 'invalid request', details });
     }
 });
 
@@ -339,7 +353,6 @@ export async function start(port = Number(process.env.PORT) || 4000) {
 export { app };
 
 // Run if entrypoint
-// @ts-ignore
-if ((import.meta as any).main) {
+if ((import.meta as unknown as { main?: boolean }).main) {
     start();
 }

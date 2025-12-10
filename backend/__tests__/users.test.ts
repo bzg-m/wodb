@@ -19,6 +19,7 @@ describe('users endpoint', () => {
         }));
 
         // Spyable getUsers implementation
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const getUsersMock = vi.fn(async (idents: unknown[]) => {
             // Simulate returning one found user (u1) and one notFound (u2)
             return {

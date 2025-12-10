@@ -29,7 +29,7 @@ const AnnotationSchema = new Schema<IAnnotation>(
 );
 
 AnnotationSchema.set('toJSON', {
-  transform(_doc, ret: any) {
+  transform(_doc: unknown, ret: unknown & { _id?: unknown; id?: unknown; __v?: unknown }) {
     // always expose `id` as the string form of _id
     if (ret._id) ret.id = String(ret._id);
     delete ret._id;

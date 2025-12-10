@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import type { auth } from 'firebase-admin/lib/auth/auth-namespace.js';
 
 import admin from '../firebaseAdmin.js';
 
@@ -7,7 +8,7 @@ export interface AuthenticatedRequest extends Request {
     uid: string;
     email?: string | null;
     name?: string | null;
-    claims?: Record<string, unknown>;
+    claims?: auth.DecodedIdToken;
   };
 }
 

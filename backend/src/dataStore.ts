@@ -33,6 +33,7 @@ export async function saveAnnotation(a: Omit<Annotation, 'id'> & { id?: string }
     // If caller provided an id that looks like an ObjectId, treat as update.
     if (a.id && mongoose.isValidObjectId(a.id)) {
         const id = a.id;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id: _id, ...values } = a;
         const updated = await AnnotationModel.findByIdAndUpdate(id, values, { new: true }).exec();
         if (updated) return (updated.toJSON() as Annotation);
