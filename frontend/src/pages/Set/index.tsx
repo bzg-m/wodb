@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import {
@@ -62,7 +62,52 @@ export function SetPage(): preact.JSX.Element {
     function openObjectForNew(objId: string) {
         setSelected(objId);
         setEditingId(null);
-        setText('');
+    }
+
+    const gridRef = useRef<HTMLDivElement | null>(null);
+
+    function handleGridItemKeyDown(e: preact.JSX.KeyboardEvent, idx: number, objId: string) {
+        if (!set || !gridRef.current) return;
+
+        // Determine number of columns from the container's computed grid template
+        let cols = 2;
+        try {
+            const style = getComputedStyle(gridRef.current);
+            const tpl = style.gridTemplateColumns;
+            if (tpl) {
+                // split on whitespace to count columns (e.g. "200px 200px")
+                cols = tpl.trim().split(/\s+/).length;
+            }
+        } catch {
+            // ignore, fall back to default
+        }
+
+        const len = set.objects.length;
+        const col = idx % cols;
+        let next = -1;
+
+        const key = e.key;
+        if (key === 'ArrowRight' || key === 'Right') {
+            if (col + 1 < cols && idx + 1 < len) next = idx + 1;
+        } else if (key === 'ArrowLeft' || key === 'Left') {
+            if (col > 0) next = idx - 1;
+        } else if (key === 'ArrowDown' || key === 'Down') {
+            if (idx + cols < len) next = idx + cols;
+        } else if (key === 'ArrowUp' || key === 'Up') {
+            if (idx - cols >= 0) next = idx - cols;
+        }
+
+        if (next >= 0 && next !== idx) {
+            e.preventDefault();
+            const items = gridRef.current.querySelectorAll<HTMLElement>('[data-grid-item]');
+            const target = items[next];
+            if (target) {
+                const nextObj = set.objects[next];
+                // update selection and focus
+                openObjectForNew(nextObj.id);
+                target.focus();
+            }
+        }
     }
 
     useEffect(() => {
@@ -238,21 +283,19 @@ export function SetPage(): preact.JSX.Element {
             </div>
 
 
-            <div class="grid grid-cols-2 grid-rows-2 gap-2 mb-6">
-                {set.objects.map((o) => (
+            <div ref={gridRef} class="grid grid-cols-2 grid-rows-2 gap-2 mb-6">
+                {set.objects.map((o, idx) => (
                     <div
                         key={o.id}
+                        data-grid-item
                         role="button"
-                        tabIndex={0}
+                        tabIndex={selected === o.id || (!selected && idx === 0) ? 0 : -1}
                         aria-pressed={selected === o.id}
                         title={o.type === 'image' ? 'Open image for annotation' : `Select ${o.value}`}
                         class={`relative w-[200px] h-[200px] border border-gray-200 text-center flex items-center justify-center cursor-pointer transition-transform duration-200 ${selected === o.id ? 'scale-105' : 'hover:scale-105'}`}
                         onClick={() => openObjectForNew(o.id)}
-                        onKeyDown={(e: KeyboardEvent) => {
-                            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-                                openObjectForNew(o.id);
-                            }
-                        }}
+                        onFocus={(e: preact.JSX.FocusEvent) => openObjectForNew(o.id)}
+                        onKeyDown={(e: preact.JSX.KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
                     >
                         {o.type === 'image' ? (
                             <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />
@@ -262,6 +305,8 @@ export function SetPage(): preact.JSX.Element {
                     </div>
                 ))}
             </div>
+
+            {!reflectionMode && <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>}
 
             <h3 class="text-xl mb-2">Your annotations for this set</h3>
             <table class="min-w-full bg-white border mb-6">
@@ -341,8 +386,6 @@ export function SetPage(): preact.JSX.Element {
                 </section>
             ) : (
                 <>
-                    <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>
-
                     <div class="set-actions">
                         <button class="px-3 py-2 bg-green-600 text-white rounded" onClick={handleRequestReview} disabled={isLocked || userAnnotations.filter((a) => a.status === 'draft').length === 0}>
                             Request Review for Set
