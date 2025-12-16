@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
-import { StateUpdater, useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import {
@@ -169,7 +169,7 @@ export function SetPage(): preact.JSX.Element {
         setText('');
         // refresh user's annotations and state
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as StateUpdater<Annotation[]>);
+        setUserAnnotations(anns as Annotation[]);
     }
 
     async function handleDelete(aId: string) {
@@ -177,7 +177,7 @@ export function SetPage(): preact.JSX.Element {
         await removeAnnotation(aId);
         if (!set) return;
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as StateUpdater<Annotation[]>);
+        setUserAnnotations(anns as Annotation[]);
     }
 
     async function handleRequestReview() {
@@ -185,7 +185,7 @@ export function SetPage(): preact.JSX.Element {
         if (!set) return;
         await sendRequestReview(set.id);
         const anns = await fetchUserAnnotationsForSet(set.id);
-        setUserAnnotations(anns as StateUpdater<Annotation[]>);
+        setUserAnnotations(anns as Annotation[]);
     }
 
     function renderAnnotationPanel(): preact.JSX.Element {
@@ -237,14 +237,29 @@ export function SetPage(): preact.JSX.Element {
                 )}
             </div>
 
-            <div class="grid grid-cols-4 gap-2 mb-6">
+
+            <div class="grid grid-cols-2 grid-rows-2 gap-2 mb-6">
                 {set.objects.map((o) => (
-                    <button
-                        class={`border rounded p-3 text-center hover:shadow ${selected === o.id ? 'ring-2 ring-blue-500' : ''}`}
+                    <div
+                        key={o.id}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={selected === o.id}
+                        title={o.type === 'image' ? 'Open image for annotation' : `Select ${o.value}`}
+                        class={`relative w-[200px] h-[200px] border border-gray-200 text-center flex items-center justify-center cursor-pointer transition-transform duration-200 ${selected === o.id ? 'scale-105' : 'hover:scale-105'}`}
                         onClick={() => openObjectForNew(o.id)}
+                        onKeyDown={(e: KeyboardEvent) => {
+                            if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+                                openObjectForNew(o.id);
+                            }
+                        }}
                     >
-                        {o.type === 'image' ? <img src={o.value} alt="object" /> : <span>{o.value}</span>}
-                    </button>
+                        {o.type === 'image' ? (
+                            <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />
+                        ) : (
+                            <span class="text-sm font-medium text-gray-700">{o.value}</span>
+                        )}
+                    </div>
                 ))}
             </div>
 
@@ -263,7 +278,7 @@ export function SetPage(): preact.JSX.Element {
                         const anns = userAnnotations.filter((a) => a.objectId === o.id);
                         if (anns.length === 0) {
                             return (
-                                <tr>
+                                <tr key={o.id}>
                                     <td class="p-2">{o.value}</td>
                                     <td class="p-2" colSpan={3}>
                                         No annotations
@@ -272,7 +287,7 @@ export function SetPage(): preact.JSX.Element {
                             );
                         }
                         return anns.map((a) => (
-                            <tr>
+                            <tr key={a.id}>
                                 <td class="p-2 align-top">{o.value}</td>
                                 <td class="p-2 align-top break-words">{a.text}</td>
                                 <td class="p-2 align-top">{a.status}</td>
@@ -313,7 +328,7 @@ export function SetPage(): preact.JSX.Element {
                                 const resolved = userNames[a.userId];
                                 const uName = resolved ? `${resolved} (${a.userId})` : a.userId;
                                 return (
-                                    <tr>
+                                    <tr key={a.id}>
                                         <td class="p-2 align-top">{obj ? obj.value : a.objectId}</td>
                                         <td class="p-2 align-top break-words">{a.text}</td>
                                         <td class="p-2 align-top">{uName}</td>
