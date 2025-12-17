@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { h } from 'preact';
-import { useEffect, useState, useRef } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import {
@@ -66,6 +66,7 @@ export function SetPage(): preact.JSX.Element {
 
     const gridRef = useRef<HTMLDivElement | null>(null);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function handleGridItemKeyDown(e: preact.JSX.KeyboardEvent, idx: number, objId: string) {
         if (!set || !gridRef.current) return;
 
@@ -294,6 +295,7 @@ export function SetPage(): preact.JSX.Element {
                         title={o.type === 'image' ? 'Open image for annotation' : `Select ${o.value}`}
                         class={`relative w-[200px] h-[200px] border border-gray-200 text-center flex items-center justify-center cursor-pointer transition-transform duration-200 ${selected === o.id ? 'scale-105' : 'hover:scale-105'}`}
                         onClick={() => openObjectForNew(o.id)}
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         onFocus={(e: preact.JSX.FocusEvent) => openObjectForNew(o.id)}
                         onKeyDown={(e: preact.JSX.KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
                     >

@@ -1,4 +1,5 @@
 import preact from '@preact/preset-vite';
+import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, loadEnv } from 'vite';
 
 export default ({ mode }: { mode: string }) => {
@@ -10,7 +11,7 @@ export default ({ mode }: { mode: string }) => {
   if (env.FIREBASE_AUTH_EMULATOR_HOST) viteDefs['import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST'] = JSON.stringify(env.FIREBASE_AUTH_EMULATOR_HOST);
 
   return defineConfig({
-    plugins: [preact()],
+    plugins: [preact(), tailwindcss()],
     define: viteDefs,
     server: {
       proxy: {
