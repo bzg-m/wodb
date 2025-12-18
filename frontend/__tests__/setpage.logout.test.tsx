@@ -84,9 +84,9 @@ describe('SetPage logout behavior', () => {
         const logoutBtn = screen.getByTestId('test-logout');
         fireEvent.click(logoutBtn);
 
-        // After logout, assert reflection section is not present and user text removed
+        // After logout, assert view link is not present and user text removed
         await waitFor(() => {
-            expect(container.textContent).not.toContain('Reflection — visible annotations');
+            expect(container.textContent).not.toContain('Open view page');
         });
         // The table should show 'No annotations' for objects when logged out
         expect(container.textContent).toContain('No annotations');

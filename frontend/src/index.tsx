@@ -8,6 +8,7 @@ import { Home } from './pages/Home/index';
 import { UserProvider } from './UserContext';
 
 const SetPage = lazy(() => import('./pages/Set/index'));
+const ViewPage = lazy(() => import('./pages/Set/View'));
 const AdminPage = lazy(() => import('./pages/Admin/index'));
 
 function NotFound() {
@@ -27,6 +28,7 @@ export function App() {
                 <main>
                     <Router>
                         <Route path="/" component={Home} />
+                        <Route path="/set/:id/view" component={ViewPage} />
                         <Route path="/set/:id" component={SetPage} />
                         <Route path="/admin" component={AdminPage} />
                         <Route default component={NotFound} />
