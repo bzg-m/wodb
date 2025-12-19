@@ -5,29 +5,8 @@ import { useUser } from '../UserContext';
 
 export function Header() {
     const { url } = useLocation();
-    const { user, loading, loginWithEmailLink, loginWithGoogle, logout } = useUser();
-    const [email, setEmail] = useState('');
-    const [sentMessage, setSentMessage] = useState<string | null>(null);
-    const [sending, setSending] = useState(false);
+    const { user, loading, loginWithGoogle, logout } = useUser();
     const [googleSigning, setGoogleSigning] = useState(false);
-
-    async function handleLogin(e: Event) {
-        e.preventDefault();
-        if (!email) return;
-        try {
-            setSending(true);
-            await loginWithEmailLink(email);
-            setSentMessage('Check your email — sign-in link sent.');
-            setEmail('');
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (err) {
-            setSentMessage('Failed to send sign-in link.');
-        } finally {
-            setSending(false);
-            setTimeout(() => setSentMessage(null), 8000);
-        }
-    }
-
     async function handleGoogleSignIn() {
         try {
             setGoogleSigning(true);
@@ -52,12 +31,9 @@ export function Header() {
                         <button onClick={() => logout()}>Log out</button>
                     </div>
                 ) : (
-                    <form onSubmit={handleLogin} class="login-form">
-                        <input type="email" placeholder="you@example.com" value={email} onInput={(e: Event) => setEmail((e.target as HTMLInputElement).value)} />
-                        <button type="submit" disabled={sending}>{sending ? 'Sending…' : 'Sign in'}</button>
+                    <div class="login-form">
                         <button type="button" class="ml-2" onClick={() => handleGoogleSignIn()} disabled={googleSigning}>{googleSigning ? 'Signing in…' : 'Sign in with Google'}</button>
-                        {sentMessage && <div class="text-sm text-green-600 mt-1">{sentMessage}</div>}
-                    </form>
+                    </div>
                 )}
             </div>
         </header>

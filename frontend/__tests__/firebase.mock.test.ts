@@ -1,4 +1,4 @@
-import { describe, expect,it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { createGetIdTokenMock } from './utils/mockFirebase';
 
@@ -11,14 +11,10 @@ describe('mockFirebase shape', () => {
             getIdToken: () => Promise<string | null>;
             isFirebaseConfigured: () => boolean;
             signInWithGoogle: () => Promise<boolean>;
-            sendSignInLink: (email: string) => Promise<void>;
-            isSignInLink: (url: string) => Promise<boolean> | boolean;
         };
         expect(typeof a.getIdToken).toBe('function');
         expect(typeof a.isFirebaseConfigured).toBe('function');
         expect(typeof a.signInWithGoogle).toBe('function');
-        expect(typeof a.sendSignInLink).toBe('function');
-        expect(typeof a.isSignInLink).toBe('function');
 
         const token = await a.getIdToken();
         expect(token).toBe('t');
@@ -26,7 +22,5 @@ describe('mockFirebase shape', () => {
         const google = await a.signInWithGoogle();
         expect(google).toBe(true);
 
-        const signinLink = await a.isSignInLink('http://example');
-        expect(signinLink).toBe(false);
     });
 });

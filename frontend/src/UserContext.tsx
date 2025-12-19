@@ -4,13 +4,10 @@ import { createContext } from 'preact';
 import { useContext, useEffect, useState } from 'preact/hooks';
 
 import {
-    completeSignInWithEmailLink,
     firebaseSignOut,
     getIdToken,
     isFirebasePresent,
-    isSignInLink,
     onFirebaseAuthStateChanged,
-    sendSignInLink,
     signInWithGoogle,
 } from './firebase';
 
@@ -19,7 +16,6 @@ type User = { uid: string; name?: string | null; email?: string | null; isAdmin?
 interface UserContextValue {
     user: User | null;
     loading: boolean;
-    loginWithEmailLink(email: string): Promise<void>;
     loginWithGoogle(): Promise<boolean>;
     logout(): Promise<void>;
 }
@@ -90,25 +86,6 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
             }
         });
 
-        // Handle email-link sign-in flow on mount
-        (async () => {
-            try {
-                const url = window.location.href;
-                if (await isSignInLink(url)) {
-                    const storedEmail = localStorage.getItem('wodb:emailForSignIn');
-                    if (storedEmail) {
-                        const ok = await completeSignInWithEmailLink(storedEmail, url);
-                        if (ok) {
-                            localStorage.removeItem('wodb:emailForSignIn');
-                            window.history.replaceState({}, document.title, window.location.pathname);
-                        }
-                    }
-                }
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (err) {
-                // ignore
-            }
-        })();
 
         // Safety: if the auth callback never fires, avoid leaving the UI
         // stuck in loading state indefinitely by clearing after 5s.
@@ -119,11 +96,6 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
             unsub();
         };
     }, []);
-
-    async function loginWithEmailLink(email: string) {
-        await sendSignInLink(email);
-        localStorage.setItem('wodb:emailForSignIn', email);
-    }
 
     async function loginWithGoogle() {
         // Show a transient loading state while the popup/redirect is active.
@@ -144,7 +116,7 @@ export function UserProvider({ children }: { children: ComponentChildren }) {
         setLoading(false);
     }
 
-    const value: UserContextValue = { user, loading, loginWithEmailLink, loginWithGoogle, logout };
+    const value: UserContextValue = { user, loading, loginWithGoogle, logout };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }

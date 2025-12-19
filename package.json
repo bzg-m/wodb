@@ -7,7 +7,7 @@
 		"preview": "npm --prefix frontend run preview",
 		"test:all": "npm --prefix frontend run test && npm --prefix backend run test",
 		"test:all:once": "npm --prefix frontend run test -- --run && npm --prefix backend run test -- --run",
-		"emulator:start": "dotenv -e .env -- npx firebase emulators:start --only auth --project $FIREBASE_PROJECT_ID",
+		"emulator:start": "dotenv -e .env -- sh -c 'npx firebase emulators:start --only auth --project \"$FIREBASE_PROJECT_ID\"'",
 		"server": "node --loader ts-node/esm backend/src/server.ts",
 		"dev:full": "concurrently \"npm --prefix backend run dev\" \"sh -c 'npx wait-on http://localhost:4000/health && npm --prefix frontend run dev'\""
 	},

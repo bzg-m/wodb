@@ -18,7 +18,7 @@ vi.mock('../src/UserContext', async () => {
 
     function UserProvider({ children }: { children: ComponentChildren }) {
         const [user] = useState({ uid: 'u1', email: 'user@example.com' });
-        const value = { user, loading: false, loginWithEmailLink: async () => { }, logout: async () => { } };
+        const value = { user, loading: false, logout: async () => { } };
         return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
     }
 
