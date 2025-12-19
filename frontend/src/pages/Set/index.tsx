@@ -227,27 +227,54 @@ export function SetPage(): preact.JSX.Element {
             <p class="text-sm text-gray-600 mb-4">{set.description}</p>
 
             <div ref={gridRef} class="grid grid-cols-2 grid-rows-2 gap-2 mb-6">
-                {set.objects.map((o, idx) => (
-                    <div
-                        key={o.id}
-                        data-grid-item
-                        role="button"
-                        tabIndex={selected === o.id || (!selected && idx === 0) ? 0 : -1}
-                        aria-pressed={selected === o.id}
-                        title={o.type === 'image' ? 'Open image for annotation' : `Select ${o.value}`}
-                        class={`relative w-[200px] h-[200px] border border-gray-200 text-center flex items-center justify-center cursor-pointer transition-transform duration-200 ${selected === o.id ? 'scale-105' : 'hover:scale-105'}`}
-                        onClick={() => openObjectForNew(o.id)}
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        onFocus={(e: preact.JSX.FocusEvent) => openObjectForNew(o.id)}
-                        onKeyDown={(e: preact.JSX.KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
-                    >
-                        {o.type === 'image' ? (
-                            <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />
-                        ) : (
-                            <span class="text-sm font-medium text-gray-700">{o.value}</span>
-                        )}
-                    </div>
-                ))}
+                {set.objects.map((o, idx) => {
+                    const isSelected = selected === o.id;
+                    const itemClasses = [
+                        'relative',
+                        'w-[200px]',
+                        'h-[200px]',
+                        'border',
+                        'border-gray-200',
+                        'text-center',
+                        'flex',
+                        'items-center',
+                        'justify-center',
+                        'cursor-pointer',
+                        'transition-transform',
+                        'duration-200',
+                        'focus:outline-none',
+                        'focus:ring-1',
+                        'focus:ring-blue-500',
+                        'focus:ring-offset-1',
+                    ];
+                    if (isSelected) {
+                        itemClasses.push('scale-105', 'ring-1', 'ring-blue-500', 'ring-offset-1');
+                    } else {
+                        itemClasses.push('hover:scale-105');
+                    }
+
+                    return (
+                        <div
+                            key={o.id}
+                            data-grid-item
+                            role="button"
+                            tabIndex={isSelected || (!selected && idx === 0) ? 0 : -1}
+                            aria-pressed={isSelected}
+                            title={o.type === 'image' ? 'Open image for annotation' : `Select ${o.value}`}
+                            class={itemClasses.join(' ')}
+                            onClick={() => openObjectForNew(o.id)}
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                            onFocus={(e: preact.JSX.FocusEvent) => openObjectForNew(o.id)}
+                            onKeyDown={(e: preact.JSX.KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
+                        >
+                            {o.type === 'image' ? (
+                                <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />
+                            ) : (
+                                <span class="text-sm font-medium text-gray-700">{o.value}</span>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
 
             <div class="annotation-panel mb-4">{renderAnnotationPanel()}</div>
