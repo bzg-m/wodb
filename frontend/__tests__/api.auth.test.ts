@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import type { Annotation } from '../../common/model';
-import * as api from '../src/api';
 import { createGetIdTokenMock } from './utils/mockFirebase';
 
 // Mock the firebase module before importing the api module.
 vi.mock('../src/firebase', () => createGetIdTokenMock('test-token-123'));
+
+import * as api from '../src/api';
 
 // Provide a local fetch mock to assert the Authorization header is sent.
 globalThis.fetch = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
