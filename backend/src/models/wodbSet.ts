@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema } from 'mongoose';
 
-import type { WODBObject as WODBObjectType } from '../data.js';
+import type { WODBObject as WODBObjectType } from '../../../common/model.js';
 
 export type IWODBObject = WODBObjectType;
 

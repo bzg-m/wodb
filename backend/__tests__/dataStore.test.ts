@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { annotations } from '../src/data.js';
+import { annotations } from '../src/testData.js';
 
 // Mock the AnnotationModel used by dataStore so tests operate on the in-memory
 // `annotations` array instead of requiring a MongoDB connection.

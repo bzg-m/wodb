@@ -1,4 +1,4 @@
-import type { Annotation, AnnotationVisibility, WODBSet } from './data';
+import type { Annotation, AnnotationVisibility, WODBSet } from '../../common/model';
 import { getIdToken } from './firebase';
 
 // Default to same-origin so production (served by Express) works without CORS.

@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import type { Annotation, AnnotationStatus, AnnotationVisibility } from './data.js';
+import type { Annotation, AnnotationStatus, AnnotationVisibility } from '../../common/model.js';
 import {
     deleteAnnotation,
     getAnnotationById,

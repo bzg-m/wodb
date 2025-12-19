@@ -1,6 +1,9 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { WODBObject, WODBSet } from '../../common/model.js';
+import { app } from '../src/server.js';
+
 // Mock the data store before importing the server so tests are true unit tests.
 vi.mock('../src/dataStore.js', () => {
     const sets = [
@@ -12,9 +15,6 @@ vi.mock('../src/dataStore.js', () => {
         getSetById: async (id: string) => sets.find((s) => s.id === id),
     };
 });
-
-import type { WODBObject, WODBSet } from '../src/data.js';
-import { app } from '../src/server.js';
 
 describe('server routes', () => {
     it('GET /api/sets returns sets', async () => {

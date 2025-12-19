@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import type { Annotation } from '../../common/model';
+import * as api from '../src/api';
 import { createGetIdTokenMock } from './utils/mockFirebase';
 
 // Mock the firebase module before importing the api module.
@@ -28,9 +30,6 @@ globalThis.fetch = vi.fn(async (input: string | URL | Request, init?: RequestIni
     }
     return { ok: false, status: 404, text: async () => 'not found' } as Response;
 });
-
-import * as api from '../src/api';
-import type { Annotation } from '../src/data';
 
 describe('api auth', () => {
     it('sends Authorization header when token present', async () => {

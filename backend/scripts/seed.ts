@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import type { Annotation,WODBSet } from '../src/data.js';
-import { annotations as sampleAnnotations,wodbSets } from '../src/data.js';
+import type { WODBSet } from '../../common/model.js';
 import { connectDB, disconnectDB } from '../src/db.js';
 import AnnotationModel from '../src/models/annotation.js';
 import WODBSetModel from '../src/models/wodbSet.js';
@@ -10,6 +9,31 @@ async function seed() {
     try {
         console.log('Seeding WODB sets...');
         // ensure sets exist (upsert)
+        const wodbSets: WODBSet[] = [
+            {
+                id: 'set1',
+                title: 'Numbers',
+                description: 'Which number does not belong?',
+                objects: [
+                    { id: 'o1', type: 'number', value: '0' },
+                    { id: 'o2', type: 'number', value: '-3' },
+                    { id: 'o3', type: 'number', value: '4' },
+                    { id: 'o4', type: 'number', value: '6.0' },
+                ],
+            },
+            {
+                id: 'set2',
+                title: 'Shapes',
+                description: 'Which shape does not belong?',
+                objects: [
+                    { id: 'o5', type: 'shape', value: 'square' },
+                    { id: 'o6', type: 'shape', value: 'circle' },
+                    { id: 'o7', type: 'shape', value: 'cube' },
+                    { id: 'o8', type: 'shape', value: 'star' },
+                ],
+            },
+        ];
+
         for (const s of wodbSets as WODBSet[]) {
             // cast objects safely to the schema shape
             const payload = {
@@ -23,22 +47,8 @@ async function seed() {
 
         console.log('Clearing annotations...');
         await AnnotationModel.deleteMany({}).exec();
-
-        if (Array.isArray(sampleAnnotations) && sampleAnnotations.length) {
-            console.log('Seeding annotations...');
-            for (const a of sampleAnnotations as Annotation[]) {
-                const doc: Partial<Annotation> = {
-                    setId: a.setId,
-                    userId: a.userId,
-                    objectId: a.objectId,
-                    text: a.text,
-                    status: a.status,
-                    visibility: a.visibility,
-                    // TODO: support seeding `createdAt` / `updatedAt` in the future if needed.
-                };
-                await AnnotationModel.create(doc);
-            }
-        }
+        // No sample annotations by default. Add any seed annotations here
+        // if you want to populate the DB with example user annotations.
 
         console.log('Seeding complete');
     } catch (err) {

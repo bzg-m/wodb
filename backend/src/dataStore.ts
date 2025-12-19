@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-import type { Annotation, AnnotationStatus, AnnotationVisibility, WODBSet } from './data.js';
+import type { Annotation, AnnotationStatus, AnnotationVisibility, WODBSet } from '../../common/model.js';
 import AnnotationModel from './models/annotation.js';
 import WODBSetModel from './models/wodbSet.js';
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Annotation, AnnotationStatus, AnnotationVisibility } from '../../common/model';
 import * as api from '../src/api';
-import type { Annotation, AnnotationStatus, AnnotationVisibility } from '../src/data';
 
 const mocks = vi.hoisted(() => {
     return {
