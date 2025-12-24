@@ -61,7 +61,6 @@ describe('SetPage redirect for anonymous users', () => {
         );
 
         await waitFor(() => {
-            // @ts-expect-error replace exists on the mocked location
             expect(window.location.replace).toHaveBeenCalledWith('/set/set-1/view');
         });
 

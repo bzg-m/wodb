@@ -3,8 +3,8 @@ import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
+import type { Annotation, WODBSet } from '../../../../common/model.js';
 import { fetchSetById, fetchUserAnnotationsForSet, fetchUserNames, fetchVisibleAnnotationsForUserInSet } from '../../api';
-import type { Annotation, WODBSet } from '../../data';
 import { useUser } from '../../UserContext';
 
 export function ViewPage(): preact.JSX.Element {

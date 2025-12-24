@@ -2,6 +2,7 @@
 import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
+import type { Annotation, AnnotationVisibility, WODBSet } from '../../../../common/model.js';
 import {
     fetchAllAnnotationsForSet,
     fetchSets,
@@ -9,7 +10,6 @@ import {
     updateAnnotationStatus,
     updateAnnotationVisibility,
 } from '../../api';
-import type { Annotation, AnnotationVisibility, WODBSet } from '../../data';
 import { useUser } from '../../UserContext';
 import loadAdminAnnotations from './loadAdminAnnotations';
 

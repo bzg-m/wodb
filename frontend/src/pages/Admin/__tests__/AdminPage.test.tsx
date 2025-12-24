@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { Annotation, WODBSet } from '../../../data';
+import type { Annotation, WODBSet } from '../../../../../common/model.js';
 import loadAdminAnnotations from '../loadAdminAnnotations';
 
 describe('loadAdminAnnotations', () => {

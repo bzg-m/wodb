@@ -3,6 +3,7 @@ import { h } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
+import type { Annotation, WODBSet } from '../../../../common/model.js';
 import {
     createOrUpdateAnnotation,
     fetchSetById,
@@ -10,7 +11,6 @@ import {
     removeAnnotation,
     sendRequestReview,
 } from '../../api';
-import type { Annotation, WODBSet } from '../../data';
 import { useUser } from '../../UserContext';
 
 export function SetPage(): preact.JSX.Element {
@@ -70,7 +70,7 @@ export function SetPage(): preact.JSX.Element {
     const gridRef = useRef<HTMLDivElement | null>(null);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    function handleGridItemKeyDown(e: preact.JSX.KeyboardEvent, idx: number, objId: string) {
+    function handleGridItemKeyDown(e: KeyboardEvent, idx: number, objId: string) {
         if (!set || !gridRef.current) return;
 
         // Determine number of columns from the container's computed grid template
@@ -272,8 +272,8 @@ export function SetPage(): preact.JSX.Element {
                             class={itemClasses.join(' ')}
                             onClick={() => openObjectForNew(o.id)}
                             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                            onFocus={(e: preact.JSX.FocusEvent) => openObjectForNew(o.id)}
-                            onKeyDown={(e: preact.JSX.KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
+                            onFocus={(e: FocusEvent) => openObjectForNew(o.id)}
+                            onKeyDown={(e: KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
                         >
                             {o.type === 'image' ? (
                                 <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />

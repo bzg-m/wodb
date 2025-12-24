@@ -1,4 +1,4 @@
-import type { Annotation, WODBSet } from '../../data';
+import type { Annotation, WODBSet } from '../../../../common/model.js';
 
 export async function loadAdminAnnotations(
     fetchSets: () => Promise<WODBSet[]>,

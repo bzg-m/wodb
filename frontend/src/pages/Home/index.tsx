@@ -4,8 +4,8 @@ import './style.css';
 import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
+import type { WODBSet } from '../../../../common/model.js';
 import { fetchSets } from '../../api';
-import type { WODBSet } from '../../data';
 
 export function Home() {
     useEffect(() => {
