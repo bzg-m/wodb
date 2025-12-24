@@ -3,6 +3,7 @@ import { h } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
 import type { Annotation, AnnotationVisibility, WODBSet } from '../../../../common/model.js';
+import { labelForIndex } from '../../../../common/model.js';
 import {
     fetchAllAnnotationsForSet,
     fetchSets,
@@ -199,7 +200,13 @@ export function AdminPage(): preact.JSX.Element {
                             return (
                                 <tr>
                                     <td class="p-2 align-top">{set ? set.title : a.setId}</td>
-                                    <td class="p-2 align-top">{a.objectId}</td>
+                                            {
+                                                (() => {
+                                                    const objIdx = set ? set.objects.findIndex((o) => o.id === a.objectId) : -1;
+                                                    const label = objIdx >= 0 ? labelForIndex(objIdx) : null;
+                                                    return <td class="p-2 align-top">{label ? `${label} (${a.objectId})` : a.objectId}</td>;
+                                                })()
+                                            }
                                     <td class="p-2 align-top break-words">{a.text}</td>
                                     <td class="p-2 align-top">{userNames[a.userId] ? `${userNames[a.userId]} (${a.userId})` : a.userId}</td>
                                     <td class="p-2 align-top">{a.visibility}</td>
@@ -243,7 +250,13 @@ export function AdminPage(): preact.JSX.Element {
                                 return (
                                     <tr>
                                         <td class="p-2 align-top">{set ? set.title : a.setId}</td>
-                                        <td class="p-2 align-top">{a.objectId}</td>
+                                        {
+                                            (() => {
+                                                const objIdx = set ? set.objects.findIndex((o) => o.id === a.objectId) : -1;
+                                                const label = objIdx >= 0 ? labelForIndex(objIdx) : null;
+                                                return <td class="p-2 align-top">{label ? `${label} (${a.objectId})` : a.objectId}</td>;
+                                            })()
+                                        }
                                         <td class="p-2 align-top break-words">{a.text}</td>
                                         <td class="p-2 align-top">{userNames[a.userId] ? `${userNames[a.userId]} (${a.userId})` : a.userId}</td>
                                         <td class="p-2 align-top">
