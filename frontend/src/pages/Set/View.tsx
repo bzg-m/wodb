@@ -54,7 +54,7 @@ export function ViewPage(): preact.JSX.Element {
         };
     }, [user?.uid, set?.id]);
 
-    const hasAccepted = userAnnotations.some((a) => a.status === 'accepted');
+    const hasAccepted = Boolean(user) && userAnnotations.some((a) => a.status === 'accepted');
 
     useEffect(() => {
         let mounted = true;
@@ -135,9 +135,13 @@ export function ViewPage(): preact.JSX.Element {
             </div>
 
             <div class="mb-4">
-                <a href={`/set/${id}`} class="text-blue-600 underline">
-                    Open annotation page
-                </a>
+                {user ? (
+                    <a href={`/set/${id}`} class="text-blue-600 underline">
+                        Open annotation page
+                    </a>
+                ) : (
+                    <div class="text-gray-700">Log in to make annotations or view others' visible annotations.</div>
+                )}
             </div>
 
             {hasAccepted ? (

@@ -18,6 +18,14 @@ export function SetPage(): preact.JSX.Element {
     const id = url.split('/set/')[1] || '';
     const { user } = useUser();
 
+    // If there's no signed-in user, redirect to the view-only page to avoid showing annotation UI.
+    useEffect(() => {
+        if (!user) {
+            // Use replace so history isn't polluted and to avoid a back-loop.
+            window.location.replace(`/set/${id}/view`);
+        }
+    }, [user, id]);
+
     const [set, setSet] = useState<WODBSet | null>(null);
     const [setLoading, setSetLoading] = useState(true);
 
