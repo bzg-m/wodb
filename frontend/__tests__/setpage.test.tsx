@@ -72,25 +72,25 @@ describe('SetPage keyboard navigation', () => {
         // Focus the first item — this should set selection to o1 via onFocus
         items[0].focus();
         await waitFor(() => {
-            expect(container.textContent).toContain('New annotation for o1');
+            expect(container.textContent).toContain('New annotation for A');
         });
 
         // Press ArrowRight to move to o2
         fireEvent.keyDown(items[0], { key: 'ArrowRight' });
         await waitFor(() => {
-            expect(container.textContent).toContain('New annotation for o2');
+            expect(container.textContent).toContain('New annotation for B');
         });
 
         // Press ArrowDown from o2 (index 1) -> should move to index 3 (o4)
         fireEvent.keyDown(items[1], { key: 'ArrowDown' });
         await waitFor(() => {
-            expect(container.textContent).toContain('New annotation for o4');
+            expect(container.textContent).toContain('New annotation for D');
         });
 
         // Simulate tabbing by focusing the next element programmatically — focus should update selection
         items[2].focus();
         await waitFor(() => {
-            expect(container.textContent).toContain('New annotation for o3');
+            expect(container.textContent).toContain('New annotation for C');
         });
     });
 });

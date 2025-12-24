@@ -25,3 +25,16 @@ export interface Annotation {
     status: AnnotationStatus;
     visibility: AnnotationVisibility;
 }
+
+// Labels for object positions within a set (top-left, top-right, bottom-left, bottom-right)
+export const LABELS = ['A', 'B', 'C', 'D'];
+
+export function labelForIndex(idx: number): string {
+    return LABELS[idx] ?? String(idx + 1);
+}
+
+export function labelForObjectId(set: WODBSet | null, objId: string | null): string | null {
+    if (!set || !objId) return objId;
+    const idx = set.objects.findIndex((o) => o.id === objId);
+    return idx >= 0 ? labelForIndex(idx) : objId;
+}

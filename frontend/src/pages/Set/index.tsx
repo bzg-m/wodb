@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
 
 import type { Annotation, WODBSet } from '../../../../common/model.js';
+import { labelForIndex, labelForObjectId } from '../../../../common/model.js';
 import {
     createOrUpdateAnnotation,
     fetchSetById,
@@ -17,6 +18,8 @@ export function SetPage(): preact.JSX.Element {
     const { url } = useLocation();
     const id = url.split('/set/')[1] || '';
     const { user } = useUser();
+
+
 
     // If there's no signed-in user, redirect to the view-only page to avoid showing annotation UI.
     useEffect(() => {
@@ -197,9 +200,10 @@ export function SetPage(): preact.JSX.Element {
 
     function renderAnnotationPanel(): preact.JSX.Element {
         if (isLocked) return <div class="text-red-600">Review requested — annotations locked.</div>;
+        const selectedLabel = selected ? labelForObjectId(set, selected) : null;
         return (
             <div>
-                <h3 class="text-lg font-medium mb-2">{editingId ? 'Edit Annotation' : selected ? `New annotation for ${selected}` : 'Select an object to annotate'}</h3>
+                <h3 class="text-lg font-medium mb-2">{editingId ? 'Edit Annotation' : selected ? `New annotation for ${selectedLabel}` : 'Select an object to annotate'}</h3>
                 {selected && (
                     <div>
                         <textarea class="w-full border rounded p-2 mb-2" value={text} onInput={(e: Event) => setText((e.target as HTMLTextAreaElement).value)} />
@@ -237,6 +241,9 @@ export function SetPage(): preact.JSX.Element {
             <div ref={gridRef} class="grid grid-cols-2 grid-rows-2 gap-2 mb-6">
                 {set.objects.map((o, idx) => {
                     const isSelected = selected === o.id;
+                    const label = labelForIndex(idx);
+                    const badgePositions = ['-left-3 -top-3', '-right-3 -top-3', '-left-3 -bottom-3', '-right-3 -bottom-3'];
+                    const badgePos = badgePositions[idx] ?? '-left-3 -top-3';
                     const itemClasses = [
                         'relative',
                         'w-[200px]',
@@ -275,6 +282,7 @@ export function SetPage(): preact.JSX.Element {
                             onFocus={(e: FocusEvent) => openObjectForNew(o.id)}
                             onKeyDown={(e: KeyboardEvent) => handleGridItemKeyDown(e, idx, o.id)}
                         >
+                            <span class={`absolute ${badgePos} bg-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border`}>{label}</span>
                             {o.type === 'image' ? (
                                 <img src={o.value} alt="object" class="max-h-full max-w-full object-contain rounded-md" />
                             ) : (
@@ -298,12 +306,13 @@ export function SetPage(): preact.JSX.Element {
                     </tr>
                 </thead>
                 <tbody>
-                    {set.objects.map((o) => {
+                    {set.objects.map((o, idx) => {
                         const anns = userAnnotations.filter((a) => a.objectId === o.id);
+                        const objLabel = labelForIndex(idx);
                         if (anns.length === 0) {
                             return (
                                 <tr key={o.id}>
-                                    <td class="p-2">{o.value}</td>
+                                    <td class="p-2">{objLabel}</td>
                                     <td class="p-2" colSpan={3}>
                                         No annotations
                                     </td>
@@ -312,7 +321,7 @@ export function SetPage(): preact.JSX.Element {
                         }
                         return anns.map((a) => (
                             <tr key={a.id}>
-                                <td class="p-2 align-top">{o.value}</td>
+                                <td class="p-2 align-top">{objLabel}</td>
                                 <td class="p-2 align-top break-words">{a.text}</td>
                                 <td class="p-2 align-top">{a.status}</td>
                                 <td class="p-2 align-top">
